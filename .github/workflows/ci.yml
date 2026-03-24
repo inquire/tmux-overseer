@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Build, Vet & Test
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Tidy
+        run: go mod tidy && git diff --exit-code go.sum
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build tmux-overseer
+        run: go build -o /dev/null ./cmd/tmux-overseer
+
+      - name: Build claude-hook
+        run: go build -trimpath -ldflags '-s -w' -o /dev/null ./cmd/claude-hook
+
+      - name: Test
+        run: go test -v -race ./...
+
+  lint:
+    name: Lint
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest

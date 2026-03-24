@@ -1,0 +1,14 @@
+# Build artifacts
+/tmux-overseer
+/claude-hook
+dist/
+
+# Go
+*.test
+*.out
+
+# macOS
+.DS_Store
+
+# Claude Code local settings
+.claude/
