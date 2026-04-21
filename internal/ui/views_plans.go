@@ -23,14 +23,14 @@ func renderPlansView(m Model) string {
 	sections = append(sections, renderHeader(m, w))
 	sections = append(sections, renderPlansSubHeader(m, w))
 
-	sep := core.SectionSeparatorStyle.Render(strings.Repeat("━", w))
+	sep := m.styles.SectionSeparatorStyle.Render(strings.Repeat("━", w))
 	sections = append(sections, sep)
 
 	if m.plansLoading {
-		spinnerStr := core.StatusStyle(core.StatusWorking).Render(m.spinner.View())
-		sections = append(sections, "  "+core.EmptyMessageStyle.Render("loading plans ")+spinnerStr)
+		spinnerStr := m.styles.StatusStyle(core.StatusWorking).Render(m.spinner.View())
+		sections = append(sections, "  "+m.styles.EmptyMessageStyle.Render("loading plans ")+spinnerStr)
 	} else if len(m.planItems) == 0 {
-		sections = append(sections, "  "+core.EmptyMessageStyle.Render("no plans found"))
+		sections = append(sections, "  "+m.styles.EmptyMessageStyle.Render("no plans found"))
 	} else {
 		sections = append(sections, renderPlanList(m, w))
 		if m.planPreviewVisible {
@@ -47,20 +47,20 @@ func renderPlansView(m Model) string {
 	sections = append(sections, sep)
 
 	if m.syncInProgress {
-		spinnerStr := core.StatusStyle(core.StatusWorking).Render(m.spinner.View())
+		spinnerStr := m.styles.StatusStyle(core.StatusWorking).Render(m.spinner.View())
 		progress := fmt.Sprintf("%s %s %d/%d  %s",
 			spinnerStr, m.syncPhase, m.syncCurrent, m.syncTotal, m.syncDetail)
 		sections = append(sections, " "+progress)
 	} else if m.mode == core.ModePlanFilter {
-		sections = append(sections, " "+core.FooterKeyStyle.Render("/")+" filter: "+m.textInput.View())
+		sections = append(sections, " "+m.styles.FooterKeyStyle.Render("/")+" filter: "+m.textInput.View())
 	} else {
 		sections = append(sections, renderPlansFooter(m, w))
 	}
 
 	if m.flashMessage != "" {
-		style := core.SuccessStyle
+		style := m.styles.SuccessStyle
 		if m.flashIsError {
-			style = core.ErrorStyle
+			style = m.styles.ErrorStyle
 		}
 		sections = append(sections, style.Render(m.flashMessage))
 	}
@@ -70,27 +70,27 @@ func renderPlansView(m Model) string {
 
 // renderPlansSubHeader renders the filter/count status line below the shared header.
 func renderPlansSubHeader(m Model, w int) string {
-	title := core.PlanHeaderStyle.Render("📋 plans")
+	title := m.styles.PlanHeaderStyle.Render("📋 plans")
 
 	countLabel := fmt.Sprintf("%d items", len(m.planItems))
 	if n := len(m.planMultiSelected); n > 0 {
-		countLabel = fmt.Sprintf("%d items  ", len(m.planItems)) + core.FilterActiveStyle.Render(fmt.Sprintf("(%d selected)", n))
+		countLabel = fmt.Sprintf("%d items  ", len(m.planItems)) + m.styles.FilterActiveStyle.Render(fmt.Sprintf("(%d selected)", n))
 	}
-	left := " " + title + "  " + core.StatusBarStyle.Render(countLabel)
+	left := " " + title + "  " + m.styles.StatusBarStyle.Render(countLabel)
 
 	var filters []string
 	if m.planFilterText != "" {
-		filters = append(filters, core.FilterActiveStyle.Render("search: "+m.planFilterText))
+		filters = append(filters, m.styles.FilterActiveStyle.Render("search: "+m.planFilterText))
 	}
 	if m.planSourceFilter != core.FilterAll {
-		filters = append(filters, core.FilterActiveStyle.Render("source: "+m.planSourceFilter.Label()))
+		filters = append(filters, m.styles.FilterActiveStyle.Render("source: "+m.planSourceFilter.Label()))
 	}
-	filters = append(filters, core.FilterActiveStyle.Render("group: "+m.planGroupMode.Label()))
+	filters = append(filters, m.styles.FilterActiveStyle.Render("group: "+m.planGroupMode.Label()))
 	if m.planTagFilter != "" {
-		filters = append(filters, core.FilterActiveStyle.Render("tag: "+m.planTagFilter))
+		filters = append(filters, m.styles.FilterActiveStyle.Render("tag: "+m.planTagFilter))
 	}
 	if m.planShowCompleted {
-		filters = append(filters, core.FilterActiveStyle.Render("showing completed"))
+		filters = append(filters, m.styles.FilterActiveStyle.Render("showing completed"))
 	}
 	right := strings.Join(filters, "  ")
 
@@ -126,7 +126,7 @@ func renderPlanList(m Model, w int) string {
 		if g.WorkspacePath == "" && !dayMode {
 			for pi := range g.Plans {
 				marked := m.planMultiSelected[cur]
-				row := renderPlanRowFiltered(g.Plans[pi], cur == selected, marked, false, false, w, m.planFilterText)
+				row := renderPlanRowFiltered(m.styles, g.Plans[pi], cur == selected, marked, false, false, w, m.planFilterText)
 				rowLines := 2
 				if g.Plans[pi].NextTodo() != "" {
 					rowLines = 3
@@ -136,14 +136,14 @@ func renderPlanList(m Model, w int) string {
 			}
 		} else {
 			expanded := m.expandedPlanGroups[g.WorkspacePath]
-			row := renderPlanGroupHeader(*g, expanded, cur == selected, w)
+			row := renderPlanGroupHeader(m.styles, *g, expanded, cur == selected, w)
 			flat = append(flat, flatRow{text: row, lines: 1})
 			cur++
 
 			if expanded {
 				for pi := range g.Plans {
 					marked := m.planMultiSelected[cur]
-					row := renderPlanRowFiltered(g.Plans[pi], cur == selected, marked, true, dayMode, w, m.planFilterText)
+					row := renderPlanRowFiltered(m.styles, g.Plans[pi], cur == selected, marked, true, dayMode, w, m.planFilterText)
 					flat = append(flat, flatRow{text: row, lines: 1})
 					cur++
 				}
@@ -178,7 +178,7 @@ func renderPlanList(m Model, w int) string {
 	usedLines := 0
 
 	if startFlat > 0 {
-		lines = append(lines, core.DimRowStyle.Render(fmt.Sprintf("  ▲ %d more", startFlat)))
+		lines = append(lines, m.styles.DimRowStyle.Render(fmt.Sprintf("  ▲ %d more", startFlat)))
 		usedLines++
 	}
 
@@ -193,14 +193,14 @@ func renderPlanList(m Model, w int) string {
 	}
 
 	if endFlat < totalRows {
-		lines = append(lines, core.DimRowStyle.Render(fmt.Sprintf("  ▼ %d more", totalRows-endFlat)))
+		lines = append(lines, m.styles.DimRowStyle.Render(fmt.Sprintf("  ▼ %d more", totalRows-endFlat)))
 	}
 
 	return strings.Join(lines, "\n")
 }
 
 // renderPlanGroupHeader renders a collapsible workspace group header row in the plans view.
-func renderPlanGroupHeader(g core.PlanGroup, expanded, selected bool, w int) string {
+func renderPlanGroupHeader(s core.Styles, g core.PlanGroup, expanded, selected bool, w int) string {
 	marker := "▸"
 	if expanded {
 		marker = "▾"
@@ -218,7 +218,7 @@ func renderPlanGroupHeader(g core.PlanGroup, expanded, selected bool, w int) str
 	}
 
 	markerPath := marker + " " + displayLabel
-	countStr := core.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d %s", n, noun))
+	countStr := s.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d %s", n, noun))
 
 	completed := 0
 	for _, p := range g.Plans {
@@ -228,14 +228,14 @@ func renderPlanGroupHeader(g core.PlanGroup, expanded, selected bool, w int) str
 	}
 	summaryStr := ""
 	if n > 0 {
-		summaryStr = core.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d/%d done", completed, n))
+		summaryStr = s.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d/%d done", completed, n))
 	}
 
 	var left string
 	if selected {
-		left = core.SelectedRowStyle.Render(markerPath) + countStr + summaryStr
+		left = s.SelectedRowStyle.Render(markerPath) + countStr + summaryStr
 	} else {
-		left = core.GroupHeaderStyle.Render(markerPath) + countStr + summaryStr
+		left = s.GroupHeaderStyle.Render(markerPath) + countStr + summaryStr
 	}
 
 	pad := w - lipgloss.Width(left) - 1
@@ -249,27 +249,27 @@ func renderPlanGroupHeader(g core.PlanGroup, expanded, selected bool, w int) str
 // inGroup=true → compact single line; inGroup=false → two lines.
 // showWorkspace=true → append shortened workspace path (used in day grouping).
 // marked=true → item is part of a multi-selection.
-func renderPlanRow(plan core.PlanEntry, selected, marked, inGroup, showWorkspace bool, w int) string {
-	return renderPlanRowFiltered(plan, selected, marked, inGroup, showWorkspace, w, "")
+func renderPlanRow(s core.Styles, plan core.PlanEntry, selected, marked, inGroup, showWorkspace bool, w int) string {
+	return renderPlanRowFiltered(s, plan, selected, marked, inGroup, showWorkspace, w, "")
 }
 
-func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showWorkspace bool, w int, filterText string) string {
+func renderPlanRowFiltered(s core.Styles, plan core.PlanEntry, selected, marked, inGroup, showWorkspace bool, w int, filterText string) string {
 	indent := ""
 	if inGroup {
 		indent = "    "
 	}
 
 	marker := indent + "  "
-	titleStyle := core.NormalRowStyle
+	titleStyle := s.NormalRowStyle
 	if marked && selected {
 		marker = indent + "●›"
-		titleStyle = core.SelectedRowStyle
+		titleStyle = s.SelectedRowStyle
 	} else if marked {
 		marker = indent + "● "
-		titleStyle = core.MarkedRowStyle
+		titleStyle = s.MarkedRowStyle
 	} else if selected {
 		marker = indent + "› "
-		titleStyle = core.SelectedRowStyle
+		titleStyle = s.SelectedRowStyle
 	}
 
 	var badge string
@@ -281,27 +281,27 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 		}
 	} else {
 		if plan.Source == core.SourceCLI {
-			badge = "🟠 " + core.ClaudeBadgeStyle.Render("CLAUDE")
+			badge = "🟠 " + s.ClaudeBadgeStyle.Render("CLAUDE")
 		} else {
-			badge = "🟣 " + core.CursorBadgeStyle.Render("CURSOR")
+			badge = "🟣 " + s.CursorBadgeStyle.Render("CURSOR")
 		}
 	}
 
 	// Tag pills (S3)
-	tagStr := renderTagPills(plan.Tags)
+	tagStr := renderTagPills(s, plan.Tags)
 
 	progress := plan.ProgressBar()
 	if progress != "" {
-		progress = "  " + core.PlanProgressStyle.Render(progress)
+		progress = "  " + s.PlanProgressStyle.Render(progress)
 	}
 
 	if inGroup {
 		rightHint := ""
 		if showWorkspace && plan.WorkspacePath != "" {
 			folder := lastPathComponent(plan.WorkspacePath)
-			rightHint = core.GitBranchStyle.Render(folder)
+			rightHint = s.GitBranchStyle.Render(folder)
 		} else {
-			rightHint = core.PlanDateStyle.Render(relativeDate(plan.LastActive))
+			rightHint = s.PlanDateStyle.Render(relativeDate(plan.LastActive))
 		}
 
 		maxTitle := w - lipgloss.Width(marker) - lipgloss.Width(badge) - lipgloss.Width(tagStr) - lipgloss.Width(progress) - lipgloss.Width(rightHint) - 4
@@ -312,7 +312,7 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 		if lipgloss.Width(title) > maxTitle {
 			title = title[:maxTitle-3] + "..."
 		}
-		left := marker + highlightMatch(title, filterText, titleStyle) + tagStr + badge + progress
+		left := marker + highlightMatch(s, title, filterText, titleStyle) + tagStr + badge + progress
 		gap := w - lipgloss.Width(left) - lipgloss.Width(rightHint) - 1
 		if gap < 1 {
 			gap = 1
@@ -322,7 +322,7 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 
 	// S1: 3-line card layout for ungrouped plans
 	date := relativeDate(plan.LastActive)
-	dateStr := core.PlanDateStyle.Render(date)
+	dateStr := s.PlanDateStyle.Render(date)
 
 	maxTitle := w - lipgloss.Width(badge) - lipgloss.Width(tagStr) - lipgloss.Width(progress) - lipgloss.Width(marker) - 4
 	if maxTitle < 10 {
@@ -332,7 +332,7 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 	if lipgloss.Width(title) > maxTitle {
 		title = title[:maxTitle-3] + "..."
 	}
-	line1 := marker + highlightMatch(title, filterText, titleStyle) + tagStr + "  " + badge + progress
+	line1 := marker + highlightMatch(s, title, filterText, titleStyle) + tagStr + "  " + badge + progress
 
 	// Line 2: repo · progress · date
 	repo := lastPathComponent(plan.WorkspacePath)
@@ -343,7 +343,7 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 	if lipgloss.Width(repo) > repoMaxW {
 		repo = repo[:repoMaxW-3] + "..."
 	}
-	repoStr := core.GitBranchStyle.Render(repo)
+	repoStr := s.GitBranchStyle.Render(repo)
 	gap := w - lipgloss.Width("  "+repoStr) - lipgloss.Width(dateStr) - 2
 	if gap < 1 {
 		gap = 1
@@ -360,7 +360,7 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 		if lipgloss.Width(nextTodo) > maxNext {
 			nextTodo = nextTodo[:maxNext-3] + "..."
 		}
-		line3 := "  " + core.DimRowStyle.Render("Next: "+nextTodo)
+		line3 := "  " + s.DimRowStyle.Render("Next: "+nextTodo)
 		return line1 + "\n" + line2 + "\n" + line3
 	}
 
@@ -368,13 +368,13 @@ func renderPlanRowFiltered(plan core.PlanEntry, selected, marked, inGroup, showW
 }
 
 // renderTagPills renders colored tag pills for a plan entry.
-func renderTagPills(tags []string) string {
+func renderTagPills(s core.Styles, tags []string) string {
 	if len(tags) == 0 {
 		return ""
 	}
 	var pills []string
 	for _, tag := range tags {
-		pills = append(pills, " "+core.TagPillStyle(tag).Render(tag))
+		pills = append(pills, " "+s.TagPillStyle(tag).Render(tag))
 	}
 	return strings.Join(pills, "")
 }
@@ -384,28 +384,28 @@ func renderPlansFooter(m Model, w int) string {
 	n := len(m.planMultiSelected)
 	if n > 0 {
 		keys := []string{
-			core.FilterActiveStyle.Render(fmt.Sprintf("%d selected", n)),
-			core.FooterKeyStyle.Render("t") + " title",
-			core.FooterKeyStyle.Render("d") + " delete",
-			core.FooterKeyStyle.Render("esc") + " clear",
+			m.styles.FilterActiveStyle.Render(fmt.Sprintf("%d selected", n)),
+			m.styles.FooterKeyStyle.Render("t") + " title",
+			m.styles.FooterKeyStyle.Render("d") + " delete",
+			m.styles.FooterKeyStyle.Render("esc") + " clear",
 		}
 		return " " + strings.Join(keys, "  ")
 	}
 
 	keys := []string{
-		core.FooterKeyStyle.Render("↑↓") + " nav",
-		core.FooterKeyStyle.Render("enter") + " resume",
-		core.FooterKeyStyle.Render("⇧↑↓") + " select",
-		core.FooterKeyStyle.Render("f") + " source",
-		core.FooterKeyStyle.Render("g") + " group",
-		core.FooterKeyStyle.Render("T") + " tag",
-		core.FooterKeyStyle.Render("r") + " restructure",
-		core.FooterKeyStyle.Render("t") + " title",
-		core.FooterKeyStyle.Render("v") + " preview",
-		core.FooterKeyStyle.Render("d") + " del",
-		core.FooterKeyStyle.Render("S") + " sync",
-		core.FooterKeyStyle.Render("R") + " reload",
-		core.FooterKeyStyle.Render("1/2/3") + " tabs",
+		m.styles.FooterKeyStyle.Render("↑↓") + " nav",
+		m.styles.FooterKeyStyle.Render("enter") + " resume",
+		m.styles.FooterKeyStyle.Render("⇧↑↓") + " select",
+		m.styles.FooterKeyStyle.Render("f") + " source",
+		m.styles.FooterKeyStyle.Render("g") + " group",
+		m.styles.FooterKeyStyle.Render("T") + " tag",
+		m.styles.FooterKeyStyle.Render("r") + " restructure",
+		m.styles.FooterKeyStyle.Render("t") + " title",
+		m.styles.FooterKeyStyle.Render("v") + " preview",
+		m.styles.FooterKeyStyle.Render("d") + " del",
+		m.styles.FooterKeyStyle.Render("S") + " sync",
+		m.styles.FooterKeyStyle.Render("R") + " reload",
+		m.styles.FooterKeyStyle.Render("1/2/3") + " tabs",
 	}
 
 	return " " + fitFooterKeys(keys, w)
@@ -430,7 +430,7 @@ func renderPlanPreviewPane(m Model, w int) string {
 	}
 	visible := allLines[start:end]
 
-	sep := core.SectionSeparatorStyle.Render(strings.Repeat("─", w))
+	sep := m.styles.SectionSeparatorStyle.Render(strings.Repeat("─", w))
 	var lines []string
 	lines = append(lines, sep)
 
@@ -453,38 +453,38 @@ func renderPlanPreviewPane(m Model, w int) string {
 
 		if trimmed == "---" {
 			inFrontmatter = !inFrontmatter
-			lines = append(lines, " "+core.DimRowStyle.Render(line))
+			lines = append(lines, " "+m.styles.DimRowStyle.Render(line))
 			continue
 		}
 		if inFrontmatter {
-			lines = append(lines, " "+core.DimRowStyle.Render(line))
+			lines = append(lines, " "+m.styles.DimRowStyle.Render(line))
 			continue
 		}
 		if strings.HasPrefix(trimmed, "```") {
 			inCodeBlock = !inCodeBlock
-			lines = append(lines, " "+core.DimRowStyle.Render(line))
+			lines = append(lines, " "+m.styles.DimRowStyle.Render(line))
 			continue
 		}
 		if inCodeBlock {
-			lines = append(lines, " "+core.DimRowStyle.Render(line))
+			lines = append(lines, " "+m.styles.DimRowStyle.Render(line))
 			continue
 		}
 
 		switch {
 		case strings.HasPrefix(trimmed, "# "):
-			lines = append(lines, " "+core.PlanTitleStyle.Render(line))
+			lines = append(lines, " "+m.styles.PlanTitleStyle.Render(line))
 		case strings.HasPrefix(trimmed, "## "):
-			lines = append(lines, " "+core.ActivityHeaderStyle.Render(line))
+			lines = append(lines, " "+m.styles.ActivityHeaderStyle.Render(line))
 		case strings.HasPrefix(trimmed, "### "):
-			lines = append(lines, " "+core.GitBranchStyle.Render(line))
+			lines = append(lines, " "+m.styles.GitBranchStyle.Render(line))
 		case strings.HasPrefix(trimmed, "- [x]") || strings.HasPrefix(trimmed, "- [X]"):
-			lines = append(lines, " "+core.SuccessStyle.Render("✓")+core.NormalRowStyle.Render(line[5:]))
+			lines = append(lines, " "+m.styles.SuccessStyle.Render("✓")+m.styles.NormalRowStyle.Render(line[5:]))
 		case strings.HasPrefix(trimmed, "- [ ]"):
-			lines = append(lines, " "+core.DimRowStyle.Render("○")+core.NormalRowStyle.Render(line[5:]))
+			lines = append(lines, " "+m.styles.DimRowStyle.Render("○")+m.styles.NormalRowStyle.Render(line[5:]))
 		case strings.HasPrefix(trimmed, "- "):
-			lines = append(lines, " "+core.NormalRowStyle.Render(line))
+			lines = append(lines, " "+m.styles.NormalRowStyle.Render(line))
 		default:
-			lines = append(lines, " "+core.PreviewContentStyle.Render(line))
+			lines = append(lines, " "+m.styles.PreviewContentStyle.Render(line))
 		}
 	}
 
@@ -499,16 +499,16 @@ func renderPlanMiniPreview(m Model, w int) string {
 	}
 	plan := m.planItems[m.planScroll.Selected]
 
-	sep := core.SectionSeparatorStyle.Render(strings.Repeat("─", w))
+	sep := m.styles.SectionSeparatorStyle.Render(strings.Repeat("─", w))
 	var lines []string
 	lines = append(lines, sep)
 
 	// Title + source badge + tags
-	sourceBadge := core.ClaudeBadgeStyle.Render("CLAUDE")
+	sourceBadge := m.styles.ClaudeBadgeStyle.Render("CLAUDE")
 	if plan.Source == core.SourceCursor {
-		sourceBadge = core.CursorBadgeStyle.Render("CURSOR")
+		sourceBadge = m.styles.CursorBadgeStyle.Render("CURSOR")
 	}
-	titleStr := core.PlanTitleStyle.Render(truncatePlanStr(plan.Title, w-20))
+	titleStr := m.styles.PlanTitleStyle.Render(truncatePlanStr(plan.Title, w-20))
 	lines = append(lines, "  "+titleStr+"  "+sourceBadge)
 
 	// Overview
@@ -517,7 +517,7 @@ func renderPlanMiniPreview(m Model, w int) string {
 		if lipgloss.Width(ov) > w-4 {
 			ov = ov[:w-7] + "..."
 		}
-		lines = append(lines, "  "+core.PlanOverviewStyle.Render(ov))
+		lines = append(lines, "  "+m.styles.PlanOverviewStyle.Render(ov))
 	}
 
 	// Color-coded progress bar (S2)
@@ -534,16 +534,16 @@ func renderPlanMiniPreview(m Model, w int) string {
 		var barStyle lipgloss.Style
 		switch {
 		case pct < 50:
-			barStyle = core.ProgressBarGreenStyle
+			barStyle = m.styles.ProgressBarGreenStyle
 		case pct < 70:
-			barStyle = core.ProgressBarYellowStyle
+			barStyle = m.styles.ProgressBarYellowStyle
 		default:
-			barStyle = core.ProgressBarRedStyle
+			barStyle = m.styles.ProgressBarRedStyle
 		}
 
 		bar := barStyle.Render(strings.Repeat("█", filled)) +
-			core.ProgressBarEmptyStyle.Render(strings.Repeat("░", barWidth-filled))
-		pctStr := core.DimRowStyle.Render(fmt.Sprintf(" %d%%  (%d/%d)", pct, done, total))
+			m.styles.ProgressBarEmptyStyle.Render(strings.Repeat("░", barWidth-filled))
+		pctStr := m.styles.DimRowStyle.Render(fmt.Sprintf(" %d%%  (%d/%d)", pct, done, total))
 		lines = append(lines, "")
 		lines = append(lines, "  Progress "+bar+pctStr)
 		lines = append(lines, "")
@@ -565,26 +565,26 @@ func renderPlanMiniPreview(m Model, w int) string {
 			switch todo.Status {
 			case "completed":
 				icon = "✓"
-				style = lipgloss.NewStyle().Foreground(core.ColorGreen)
+				style = lipgloss.NewStyle().Foreground(m.styles.ColorGreen)
 			case "in_progress":
 				icon = "●"
-				style = lipgloss.NewStyle().Foreground(core.ColorYellow)
+				style = lipgloss.NewStyle().Foreground(m.styles.ColorYellow)
 				if firstInProgress {
-					suffix = core.DimRowStyle.Render("  ← current")
+					suffix = m.styles.DimRowStyle.Render("  ← current")
 					firstInProgress = false
 				}
 			case "cancelled":
 				icon = "✗"
-				style = lipgloss.NewStyle().Foreground(core.ColorDim)
+				style = lipgloss.NewStyle().Foreground(m.styles.ColorDim)
 			default:
 				icon = "○"
-				style = lipgloss.NewStyle().Foreground(core.ColorDim)
+				style = lipgloss.NewStyle().Foreground(m.styles.ColorDim)
 			}
 			content := truncatePlanStr(todo.Content, w-20)
 			lines = append(lines, "    "+style.Render(icon+" "+content)+suffix)
 		}
 		if len(plan.Todos) > maxShow {
-			lines = append(lines, "    "+core.DimRowStyle.Render(fmt.Sprintf("... %d more todos", len(plan.Todos)-maxShow)))
+			lines = append(lines, "    "+m.styles.DimRowStyle.Render(fmt.Sprintf("... %d more todos", len(plan.Todos)-maxShow)))
 		}
 	}
 
@@ -593,7 +593,7 @@ func renderPlanMiniPreview(m Model, w int) string {
 
 // highlightMatch returns the title string with filterText highlighted using FilterMatchStyle.
 // Falls back to the raw title if no match is found or filter is empty.
-func highlightMatch(title, filter string, baseStyle lipgloss.Style) string {
+func highlightMatch(s core.Styles, title, filter string, baseStyle lipgloss.Style) string {
 	if filter == "" {
 		return baseStyle.Render(title)
 	}
@@ -634,7 +634,7 @@ func highlightMatch(title, filter string, baseStyle lipgloss.Style) string {
 	after := string(runes[runeIdx+len(filterRunes):])
 	_ = utf8.RuneError // ensure unicode/utf8 import is used
 
-	return baseStyle.Render(before) + core.FilterMatchStyle.Render(matched) + baseStyle.Render(after)
+	return baseStyle.Render(before) + s.FilterMatchStyle.Render(matched) + baseStyle.Render(after)
 }
 
 func truncatePlanStr(s string, max int) string {

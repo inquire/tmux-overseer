@@ -7,6 +7,8 @@ import (
 	"github.com/inquire/tmux-overseer/internal/core"
 )
 
+var testStyles = core.NewStyles(true)
+
 func makeTestWindow(source core.SessionSource, status core.Status, cost float64) core.ClaudeWindow {
 	return core.ClaudeWindow{
 		SessionName: "test-session",
@@ -26,7 +28,7 @@ func makeTestWindow(source core.SessionSource, status core.Status, cost float64)
 
 func TestRenderSessionRowLine1_ShowsName(t *testing.T) {
 	win := makeTestWindow(core.SourceCLI, core.StatusWorking, 1.23)
-	line := renderSessionRowLine1(" ", win, false, 80)
+	line := renderSessionRowLine1(" ", win, false, 80, testStyles)
 	// Strip ANSI for plain-text checks
 	plain := stripANSI(line)
 	if !strings.Contains(plain, "test-session") {
@@ -36,7 +38,7 @@ func TestRenderSessionRowLine1_ShowsName(t *testing.T) {
 
 func TestRenderSessionRowLine1_ShowsCost(t *testing.T) {
 	win := makeTestWindow(core.SourceCLI, core.StatusWorking, 1.23)
-	line := renderSessionRowLine1(" ", win, false, 80)
+	line := renderSessionRowLine1(" ", win, false, 80, testStyles)
 	plain := stripANSI(line)
 	if !strings.Contains(plain, "$1.23") {
 		t.Errorf("line1 missing cost: %q", plain)
@@ -46,8 +48,8 @@ func TestRenderSessionRowLine1_ShowsCost(t *testing.T) {
 func TestRenderSessionRowLine1_ShowsMarker(t *testing.T) {
 	win := makeTestWindow(core.SourceCLI, core.StatusWorking, 0)
 	win.TaskTodos = []core.PlanTodo{{Content: "a task", Status: "pending"}}
-	collapsed := renderSessionRowLine1("▸ ", win, false, 80)
-	expanded := renderSessionRowLine1("▾ ", win, false, 80)
+	collapsed := renderSessionRowLine1("▸ ", win, false, 80, testStyles)
+	expanded := renderSessionRowLine1("▾ ", win, false, 80, testStyles)
 	if !strings.Contains(collapsed, "▸") {
 		t.Errorf("collapsed missing ▸ marker: %q", collapsed)
 	}
@@ -61,7 +63,7 @@ func TestRenderSessionRowLine2_ShowsProgress(t *testing.T) {
 	win.ActivePlanDone = 3
 	win.ActivePlanTotal = 10
 	win.ActivePlanTitle = "tasks"
-	line := renderSessionRowLine2(win, false, 80)
+	line := renderSessionRowLine2(win, false, 80, testStyles)
 	plain := stripANSI(line)
 	if !strings.Contains(plain, "3/10") {
 		t.Errorf("line2 missing progress count: %q", plain)
@@ -75,7 +77,7 @@ func TestRenderSessionRowLine2_TaskTodosProgress(t *testing.T) {
 		{Content: "done", Status: "completed"},
 		{Content: "pending", Status: "pending"},
 	}
-	line := renderSessionRowLine2(win, false, 80)
+	line := renderSessionRowLine2(win, false, 80, testStyles)
 	plain := stripANSI(line)
 	if !strings.Contains(plain, "2/3") {
 		t.Errorf("line2 missing task progress 2/3: %q", plain)
@@ -85,7 +87,7 @@ func TestRenderSessionRowLine2_TaskTodosProgress(t *testing.T) {
 func TestRenderSessionRowLine3_ShowsLastTool(t *testing.T) {
 	win := makeTestWindow(core.SourceCLI, core.StatusWorking, 0)
 	win.Panes[0].LastTool = "Bash"
-	line := renderSessionRowLine3(win)
+	line := renderSessionRowLine3(win, testStyles)
 	plain := stripANSI(line)
 	if !strings.Contains(plain, "Bash") {
 		t.Errorf("line3 missing last tool: %q", plain)
@@ -95,7 +97,7 @@ func TestRenderSessionRowLine3_ShowsLastTool(t *testing.T) {
 func TestRenderSessionRowLine3_EmptyWhenIdle(t *testing.T) {
 	win := makeTestWindow(core.SourceCLI, core.StatusIdle, 0)
 	win.Panes[0].LastTool = "Bash"
-	line := renderSessionRowLine3(win)
+	line := renderSessionRowLine3(win, testStyles)
 	if line != "" {
 		t.Errorf("line3 should be empty when idle: %q", line)
 	}
@@ -106,7 +108,7 @@ func TestRenderSessionRowLine3_ShowsSubagents(t *testing.T) {
 	win.Subagents = []core.Subagent{
 		{AgentType: "Explore", Description: "find auth", CurrentTool: "Grep"},
 	}
-	line := renderSessionRowLine3(win)
+	line := renderSessionRowLine3(win, testStyles)
 	plain := stripANSI(line)
 	// Description is the primary label now; type is the fallback
 	if !strings.Contains(plain, "find auth") {
@@ -121,7 +123,7 @@ func TestRenderSessionRowExpanded_TasksNumbered(t *testing.T) {
 		{Content: "second task", Status: "in_progress"},
 		{Content: "third task", Status: "pending"},
 	}
-	expanded := renderSessionRowExpanded(win, 80)
+	expanded := renderSessionRowExpanded(win, 80, testStyles)
 	plain := stripANSI(expanded)
 	if !strings.Contains(plain, "1.") {
 		t.Errorf("expanded missing task number 1: %q", plain)
@@ -139,7 +141,7 @@ func TestRenderSessionRowExpanded_ActivitySection(t *testing.T) {
 	win.Subagents = []core.Subagent{
 		{AgentType: "Explore", Description: "find auth", CurrentTool: "Grep"},
 	}
-	expanded := renderSessionRowExpanded(win, 80)
+	expanded := renderSessionRowExpanded(win, 80, testStyles)
 	plain := stripANSI(expanded)
 	if !strings.Contains(plain, "activity") {
 		t.Errorf("expanded missing activity header: %q", plain)
@@ -151,7 +153,7 @@ func TestRenderSessionRowExpanded_ActivitySection(t *testing.T) {
 
 func TestRenderSessionRowExpanded_EmptyWhenNoData(t *testing.T) {
 	win := makeTestWindow(core.SourceCLI, core.StatusIdle, 0)
-	expanded := renderSessionRowExpanded(win, 80)
+	expanded := renderSessionRowExpanded(win, 80, testStyles)
 	if expanded != "" {
 		t.Errorf("expanded should be empty when no tasks/subagents: %q", expanded)
 	}

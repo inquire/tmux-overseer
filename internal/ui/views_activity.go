@@ -21,14 +21,14 @@ func renderActivityView(m Model) string {
 
 	sections = append(sections, renderHeader(m, w))
 
-	sep := core.SectionSeparatorStyle.Render(strings.Repeat("━", w))
+	sep := m.styles.SectionSeparatorStyle.Render(strings.Repeat("━", w))
 	sections = append(sections, sep)
 
 	if m.activityLoading {
-		spinnerStr := core.StatusStyle(core.StatusWorking).Render(m.spinner.View())
-		sections = append(sections, "  "+core.EmptyMessageStyle.Render("loading activity ")+spinnerStr)
+		spinnerStr := m.styles.StatusStyle(core.StatusWorking).Render(m.spinner.View())
+		sections = append(sections, "  "+m.styles.EmptyMessageStyle.Render("loading activity ")+spinnerStr)
 	} else if len(m.activityGrid) == 0 && len(m.activityProjects) == 0 {
-		sections = append(sections, "  "+core.EmptyMessageStyle.Render("no activity data — press S to sync plans"))
+		sections = append(sections, "  "+m.styles.EmptyMessageStyle.Render("no activity data — press S to sync plans"))
 	} else {
 		// Fixed layout — nothing moves regardless of content length:
 		//   header(3) + sep(1) = 4 lines above content
@@ -84,14 +84,14 @@ func renderActivityView(m Model) string {
 			} else {
 				hint = fmt.Sprintf("  ↓ scroll down  %d more", remaining)
 			}
-			visible[viewportLines-1] = core.DimRowStyle.Render(hint)
+			visible[viewportLines-1] = m.styles.DimRowStyle.Render(hint)
 		}
 
 		// Assemble the fixed layout: breakdown viewport + anchored heatmap block.
 		var content []string
 		content = append(content, strings.Join(visible, "\n"))
 		content = append(content, "")
-		content = append(content, "  "+core.SectionSeparatorStyle.Render(strings.Repeat("─", w-4)))
+		content = append(content, "  "+m.styles.SectionSeparatorStyle.Render(strings.Repeat("─", w-4)))
 		content = append(content, "")
 		content = append(content, renderHeatmap(m, w))
 
@@ -101,18 +101,18 @@ func renderActivityView(m Model) string {
 	sections = append(sections, sep)
 
 	if m.syncInProgress {
-		spinnerStr := core.StatusStyle(core.StatusWorking).Render(m.spinner.View())
+		spinnerStr := m.styles.StatusStyle(core.StatusWorking).Render(m.spinner.View())
 		progress := fmt.Sprintf("%s %s %d/%d  %s",
 			spinnerStr, m.syncPhase, m.syncCurrent, m.syncTotal, m.syncDetail)
 		sections = append(sections, " "+progress)
 	} else {
-		sections = append(sections, renderActivityFooter(w))
+		sections = append(sections, renderActivityFooter(m.styles, w))
 	}
 
 	if m.flashMessage != "" {
-		style := core.SuccessStyle
+		style := m.styles.SuccessStyle
 		if m.flashIsError {
-			style = core.ErrorStyle
+			style = m.styles.ErrorStyle
 		}
 		sections = append(sections, style.Render(m.flashMessage))
 	}
@@ -186,15 +186,15 @@ func renderDayDashboard(m Model, w int) string {
 		sessionCount = m.activityDayDetail.PlansTouched // best proxy for historical
 	}
 
-	labelStyle := lipgloss.NewStyle().Foreground(core.ColorOrange).Bold(true)
-	dimStyle := core.DimRowStyle
+	labelStyle := lipgloss.NewStyle().Foreground(m.styles.ColorOrange).Bold(true)
+	dimStyle := m.styles.DimRowStyle
 
 	left := "  " + labelStyle.Render(dayLabel) + "  " +
-		core.NormalRowStyle.Render(dateStr)
+		m.styles.NormalRowStyle.Render(dateStr)
 
 	var rightParts []string
 	if isToday && totalCost > 0 {
-		rightParts = append(rightParts, core.CostStyle.Render(fmt.Sprintf("$%.2f", totalCost)))
+		rightParts = append(rightParts, m.styles.CostStyle.Render(fmt.Sprintf("$%.2f", totalCost)))
 	}
 	if sessionCount > 0 {
 		noun := "sessions"
@@ -204,7 +204,7 @@ func renderDayDashboard(m Model, w int) string {
 		rightParts = append(rightParts, dimStyle.Render(fmt.Sprintf("%d %s", sessionCount, noun)))
 	}
 	if todosCompleted > 0 {
-		rightParts = append(rightParts, core.SuccessStyle.Render(fmt.Sprintf("%d todos done", todosCompleted)))
+		rightParts = append(rightParts, m.styles.SuccessStyle.Render(fmt.Sprintf("%d todos done", todosCompleted)))
 	}
 	right := strings.Join(rightParts, "  ")
 
@@ -255,11 +255,11 @@ func renderDayDashboard(m Model, w int) string {
 					for src := range info.sources {
 						switch src {
 						case core.SourceCursor:
-							projSources = append(projSources, core.CursorBadgeStyle.Render("[CURSOR]"))
+							projSources = append(projSources, m.styles.CursorBadgeStyle.Render("[CURSOR]"))
 						case core.SourceCLI:
-							projSources = append(projSources, core.ClaudeBadgeStyle.Render("[CLAUDE]"))
+							projSources = append(projSources, m.styles.ClaudeBadgeStyle.Render("[CLAUDE]"))
 						case core.SourceCloud:
-							projSources = append(projSources, core.CloudBadgeStyle.Render("[CLOUD]"))
+							projSources = append(projSources, m.styles.CloudBadgeStyle.Render("[CLOUD]"))
 						}
 					}
 					break
@@ -273,11 +273,11 @@ func renderDayDashboard(m Model, w int) string {
 		if len(projName) > 20 {
 			projName = projName[:19] + "…"
 		}
-		nameStr := core.ActivityProjectStyle.Render(fmt.Sprintf("%-20s", projName))
+		nameStr := m.styles.ActivityProjectStyle.Render(fmt.Sprintf("%-20s", projName))
 
 		costStr := ""
 		if projCost > 0 {
-			costStr = core.CostStyle.Render(fmt.Sprintf("$%.2f", projCost)) + "  "
+			costStr = m.styles.CostStyle.Render(fmt.Sprintf("$%.2f", projCost)) + "  "
 		}
 
 		barWidth := 8
@@ -288,8 +288,8 @@ func renderDayDashboard(m Model, w int) string {
 		if filled > barWidth {
 			filled = barWidth
 		}
-		bar := core.ActivityBarFilled.Render(strings.Repeat("█", filled)) +
-			core.ActivityBarEmpty.Render(strings.Repeat("░", barWidth-filled))
+		bar := m.styles.ActivityBarFilled.Render(strings.Repeat("█", filled)) +
+			m.styles.ActivityBarEmpty.Render(strings.Repeat("░", barWidth-filled))
 
 		todoStr := dimStyle.Render(fmt.Sprintf("  %d/%d todos", totalDone, totalAll))
 		badgeStr := ""
@@ -333,14 +333,14 @@ func renderDayDashboard(m Model, w int) string {
 			if planFilled > planBarWidth {
 				planFilled = planBarWidth
 			}
-			planBar := core.ActivityBarFilled.Render(strings.Repeat("█", planFilled)) +
-				core.ActivityBarEmpty.Render(strings.Repeat("░", planBarWidth-planFilled))
+			planBar := m.styles.ActivityBarFilled.Render(strings.Repeat("█", planFilled)) +
+				m.styles.ActivityBarEmpty.Render(strings.Repeat("░", planBarWidth-planFilled))
 
 			status := ""
 			if pl.TotalTodos > 0 && pl.CompletedTodos == pl.TotalTodos {
-				status = "  " + core.SuccessStyle.Render("✓ done")
+				status = "  " + m.styles.SuccessStyle.Render("✓ done")
 			} else if pl.TotalTodos > 0 {
-				status = "  " + lipgloss.NewStyle().Foreground(core.ColorYellow).Render("→ in progress")
+				status = "  " + lipgloss.NewStyle().Foreground(m.styles.ColorYellow).Render("→ in progress")
 			}
 
 			countStr := dimStyle.Render(fmt.Sprintf(" %d/%d", pl.CompletedTodos, pl.TotalTodos))
@@ -355,7 +355,7 @@ func renderDayDashboard(m Model, w int) string {
 			}
 
 			planLine := "    " + dimStyle.Render(connector) + " " +
-				core.NormalRowStyle.Render(title)
+				m.styles.NormalRowStyle.Render(title)
 
 			// Right-align bar + count + status
 			rightPart := planBar + countStr + status
@@ -381,7 +381,7 @@ func renderDayDashboard(m Model, w int) string {
 func renderHeatmap(m Model, w int) string {
 	grid := m.activityGrid
 	if len(grid) == 0 {
-		return "  " + core.EmptyMessageStyle.Render("no heatmap data")
+		return "  " + m.styles.EmptyMessageStyle.Render("no heatmap data")
 	}
 
 	// Organize into weeks (columns) x days (rows, 0=Sun..6=Sat)
@@ -416,13 +416,13 @@ func renderHeatmap(m Model, w int) string {
 	}
 
 	weeksLabel := fmt.Sprintf("%d", len(weeks))
-	header := "  " + core.ActivityHeaderStyle.Render("Activity (last "+weeksLabel+" weeks)")
+	header := "  " + m.styles.ActivityHeaderStyle.Render("Activity (last "+weeksLabel+" weeks)")
 
 	// Legend
-	legend := "  " + core.DimRowStyle.Render("less ") +
-		heatChar(0, false) + heatChar(1, false) + heatChar(2, false) +
-		heatChar(3, false) + heatChar(5, false) +
-		core.DimRowStyle.Render(" more")
+	legend := "  " + m.styles.DimRowStyle.Render("less ") +
+		heatChar(m.styles, 0, false) + heatChar(m.styles, 1, false) + heatChar(m.styles, 2, false) +
+		heatChar(m.styles, 3, false) + heatChar(m.styles, 5, false) +
+		m.styles.DimRowStyle.Render(" more")
 	gap := w - lipgloss.Width(header) - lipgloss.Width(legend) - 1
 	if gap < 1 {
 		gap = 1
@@ -449,7 +449,7 @@ func renderHeatmap(m Model, w int) string {
 			monthLine += "  "
 		}
 	}
-	monthLine = "  " + core.DimRowStyle.Render(monthLine)
+	monthLine = "  " + m.styles.DimRowStyle.Render(monthLine)
 
 	dayLabels := []struct {
 		label   string
@@ -470,13 +470,13 @@ func renderHeatmap(m Model, w int) string {
 
 	selectedDayIdx := m.activitySelectedDay
 	for _, dl := range dayLabels {
-		row := "  " + core.DimRowStyle.Render(dl.label+" ")
+		row := "  " + m.styles.DimRowStyle.Render(dl.label+" ")
 		for _, week := range weeks {
 			found := false
 			for _, c := range week {
 				if int(c.date.Weekday()) == dl.weekday {
 					isSelected := c.dayIndex == selectedDayIdx
-					row += heatChar(c.score, isSelected)
+					row += heatChar(m.styles, c.score, isSelected)
 					found = true
 					break
 				}
@@ -491,23 +491,23 @@ func renderHeatmap(m Model, w int) string {
 	return strings.Join(lines, "\n")
 }
 
-func heatChar(score int, selected bool) string {
+func heatChar(s core.Styles, score int, selected bool) string {
 	if selected {
-		return core.HeatSelectedStyle.Render("[") + core.HeatSelectedStyle.Render("■") + core.HeatSelectedStyle.Render("]")
+		return s.HeatSelectedStyle.Render("[") + s.HeatSelectedStyle.Render("■") + s.HeatSelectedStyle.Render("]")
 	}
 	ch := "■"
 	var style lipgloss.Style
 	switch {
 	case score == 0:
-		style = core.HeatLevel0
+		style = s.HeatLevel0
 	case score <= 2:
-		style = core.HeatLevel1
+		style = s.HeatLevel1
 	case score <= 5:
-		style = core.HeatLevel2
+		style = s.HeatLevel2
 	case score <= 10:
-		style = core.HeatLevel3
+		style = s.HeatLevel3
 	default:
-		style = core.HeatLevel4
+		style = s.HeatLevel4
 	}
 	return style.Render(ch) + " "
 }
@@ -527,20 +527,20 @@ func renderSelectedDayDetail(m Model, w int) string {
 	var lines []string
 
 	for _, proj := range detail.Projects {
-		lines = append(lines, "    "+core.GitBranchStyle.Render(proj.ProjectName))
+		lines = append(lines, "    "+m.styles.GitBranchStyle.Render(proj.ProjectName))
 
 		for _, dp := range proj.Plans {
 			progress := ""
 			if dp.TotalTodos > 0 {
 				maxBlocks := 6
 				filled := (dp.CompletedTodos * maxBlocks) / dp.TotalTodos
-				progress = core.PlanProgressStyle.Render(
+				progress = m.styles.PlanProgressStyle.Render(
 					strings.Repeat("▓", filled)+strings.Repeat("░", maxBlocks-filled)) +
-					core.DimRowStyle.Render(fmt.Sprintf(" %d/%d", dp.CompletedTodos, dp.TotalTodos))
+					m.styles.DimRowStyle.Render(fmt.Sprintf(" %d/%d", dp.CompletedTodos, dp.TotalTodos))
 			}
 
 			if dp.TotalTodos > 0 && dp.CompletedTodos == dp.TotalTodos {
-				progress += " " + core.SuccessStyle.Render("✓ done!")
+				progress += " " + m.styles.SuccessStyle.Render("✓ done!")
 			}
 
 			title := dp.Title
@@ -552,7 +552,7 @@ func renderSelectedDayDetail(m Model, w int) string {
 				title = title[:maxTitle-3] + "..."
 			}
 
-			line := "      " + core.NormalRowStyle.Render(title)
+			line := "      " + m.styles.NormalRowStyle.Render(title)
 			if progress != "" {
 				gap := w - lipgloss.Width(line) - lipgloss.Width(progress) - 2
 				if gap < 1 {
@@ -570,16 +570,16 @@ func renderSelectedDayDetail(m Model, w int) string {
 	return strings.Join(lines, "\n")
 }
 
-func renderActivityFooter(w int) string {
+func renderActivityFooter(s core.Styles, w int) string {
 	keys := []string{
-		core.FooterKeyStyle.Render("←→") + " navigate days",
-		core.FooterKeyStyle.Render("↑↓") + " scroll",
-		core.FooterKeyStyle.Render("[/]") + " resize",
-		core.FooterKeyStyle.Render("S") + " sync",
-		core.FooterKeyStyle.Render("R") + " reload",
-		core.FooterKeyStyle.Render("p") + " plans",
-		core.FooterKeyStyle.Render("s") + " sessions",
-		core.FooterKeyStyle.Render("q") + " quit",
+		s.FooterKeyStyle.Render("←→") + " navigate days",
+		s.FooterKeyStyle.Render("↑↓") + " scroll",
+		s.FooterKeyStyle.Render("[/]") + " resize",
+		s.FooterKeyStyle.Render("S") + " sync",
+		s.FooterKeyStyle.Render("R") + " reload",
+		s.FooterKeyStyle.Render("p") + " plans",
+		s.FooterKeyStyle.Render("s") + " sessions",
+		s.FooterKeyStyle.Render("q") + " quit",
 	}
 	return " " + fitFooterKeys(keys, w)
 }

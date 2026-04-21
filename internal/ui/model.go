@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/inquire/tmux-overseer/internal/core"
 	"github.com/inquire/tmux-overseer/internal/db"
@@ -149,6 +151,9 @@ type Model struct {
 	// Terminal focus state
 	focused bool // true when terminal has focus; used to throttle refresh
 
+	// Styles (resolved for the terminal background; rebuilt on theme change)
+	styles core.Styles
+
 	// Lifecycle
 	loading  bool // true while initial/async refresh is in-flight
 	err      error
@@ -160,9 +165,11 @@ type Model struct {
 // renders the session list on the very first frame instead of a loading screen.
 // A background refresh is always fired from Init() to update stale data.
 func InitialModel() Model {
+	styles := core.NewStyles(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+
 	s := spinner.New(
 		spinner.WithSpinner(core.ClaudeFlowerSpinner),
-		spinner.WithStyle(core.StatusStyle(core.StatusWorking)),
+		spinner.WithStyle(styles.StatusStyle(core.StatusWorking)),
 	)
 
 	ti := textinput.New()
@@ -204,6 +211,7 @@ func InitialModel() Model {
 		hookEvents:         hookEvents,
 		hookServer:         srv,
 		previewHeight:      10,
+		styles:             styles,
 	}
 
 	// Attempt to populate the model from a disk cache for instant first frame.
@@ -231,7 +239,7 @@ func InitialModel() Model {
 
 // Init implements tea.Model.
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{m.spinner.Tick, tickCmd(), refreshWindowsCmd()}
+	cmds := []tea.Cmd{m.spinner.Tick, tickCmd(), refreshWindowsCmd(), tea.RequestBackgroundColor}
 	if m.hookEvents != nil {
 		cmds = append(cmds, waitForHookCmd(m.hookEvents))
 	}
@@ -276,6 +284,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.BlurMsg:
 		m.focused = false
+		return m, nil
+
+	case tea.BackgroundColorMsg:
+		m.styles = core.NewStyles(msg.IsDark())
 		return m, nil
 
 	case core.TickMsg:

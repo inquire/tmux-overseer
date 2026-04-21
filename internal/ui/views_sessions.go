@@ -40,7 +40,7 @@ func renderSessionList(m Model, w int) string {
 		}
 
 		if item.IsSectionHeader {
-			renderedRow := renderSectionHeader(item.SectionLabel, w)
+			renderedRow := renderSectionHeader(item.SectionLabel, w, m.styles)
 			rowLines := strings.Split(renderedRow, "\n")
 			if lineCount+len(rowLines) > maxLines {
 				break
@@ -79,7 +79,7 @@ func renderSessionList(m Model, w int) string {
 			win := m.windows[item.WindowIdx]
 			pane := win.Panes[item.PaneIdx]
 			isLast := item.PaneIdx == len(win.Panes)-1
-			renderedRow = renderPaneRow(pane, isLast, selected, w)
+			renderedRow = renderPaneRow(pane, isLast, selected, w, m.styles)
 		} else {
 			win := m.windows[item.WindowIdx]
 			key := fmt.Sprintf("%s:%d", win.SessionName, win.WindowIndex)
@@ -120,7 +120,7 @@ func renderSessionList(m Model, w int) string {
 
 	// Scroll indicators on the right edge
 	if hasItemsAbove && len(lines) > 0 {
-		indicator := " " + core.ScrollIndicatorStyle.Render("▲")
+		indicator := " " + m.styles.ScrollIndicatorStyle.Render("▲")
 		currentWidth := lipgloss.Width(lines[0])
 		padding := w - currentWidth - 3
 		if padding > 0 {
@@ -132,7 +132,7 @@ func renderSessionList(m Model, w int) string {
 
 	if hasItemsBelow && paddingStart > 0 {
 		lastContentLine := paddingStart - 1
-		indicator := " " + core.ScrollIndicatorStyle.Render("▼")
+		indicator := " " + m.styles.ScrollIndicatorStyle.Render("▼")
 		currentWidth := lipgloss.Width(lines[lastContentLine])
 		padding := w - currentWidth - 3
 		if padding > 0 {
@@ -155,13 +155,13 @@ func renderSessionList(m Model, w int) string {
 
 // renderSectionHeader renders a non-selectable group header with a separator line.
 // Takes 2 lines: the label and a dim separator.
-func renderSectionHeader(label string, w int) string {
-	header := "  " + core.SectionHeaderStyle.Render(label)
+func renderSectionHeader(label string, w int, s core.Styles) string {
+	header := "  " + s.SectionHeaderStyle.Render(label)
 	sepWidth := w - 4
 	if sepWidth < 1 {
 		sepWidth = 1
 	}
-	separator := "  " + core.SectionSeparatorStyle.Render(strings.Repeat("─", sepWidth))
+	separator := "  " + s.SectionSeparatorStyle.Render(strings.Repeat("─", sepWidth))
 	return header + "\n" + separator
 }
 
@@ -206,22 +206,22 @@ func renderSessionGroupHeader(m Model, item core.ListItem, selected bool, w int)
 
 	displayPath := shortenHomePath(item.GroupKey)
 
-	pathStr := core.GroupHeaderStyle.Render(marker + " " + displayPath)
+	pathStr := m.styles.GroupHeaderStyle.Render(marker + " " + displayPath)
 	if branch != "" {
-		pathStr += "  " + core.GitBranchStyle.Render("("+branch+")")
+		pathStr += "  " + m.styles.GitBranchStyle.Render("("+branch+")")
 	}
-	countStr := core.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d %s", n, noun))
+	countStr := m.styles.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d %s", n, noun))
 	left := pathStr + countStr
 
 	var statusParts []string
 	if totalWorking > 0 {
-		statusParts = append(statusParts, core.StatusStyle(core.StatusWorking).Render(fmt.Sprintf("✻ %d working", totalWorking)))
+		statusParts = append(statusParts, m.styles.StatusStyle(core.StatusWorking).Render(fmt.Sprintf("✻ %d working", totalWorking)))
 	}
 	if totalWaiting > 0 {
-		statusParts = append(statusParts, core.StatusStyle(core.StatusWaitingInput).Render(fmt.Sprintf("◐ %d waiting", totalWaiting)))
+		statusParts = append(statusParts, m.styles.StatusStyle(core.StatusWaitingInput).Render(fmt.Sprintf("◐ %d waiting", totalWaiting)))
 	}
 	if totalIdle > 0 {
-		statusParts = append(statusParts, core.StatusStyle(core.StatusIdle).Render(fmt.Sprintf("○ %d idle", totalIdle)))
+		statusParts = append(statusParts, m.styles.StatusStyle(core.StatusIdle).Render(fmt.Sprintf("○ %d idle", totalIdle)))
 	}
 	right := strings.Join(statusParts, "  ")
 
@@ -234,9 +234,9 @@ func renderSessionGroupHeader(m Model, item core.ListItem, selected bool, w int)
 
 	if selected {
 		markerPath := marker + " " + displayPath
-		left = core.SelectedRowStyle.Render(markerPath)
+		left = m.styles.SelectedRowStyle.Render(markerPath)
 		if branch != "" {
-			left += "  " + core.GitBranchStyle.Render("("+branch+")")
+			left += "  " + m.styles.GitBranchStyle.Render("("+branch+")")
 		}
 		left += countStr
 		leftW = lipgloss.Width(left)
@@ -281,24 +281,24 @@ func renderTeamHeader(m Model, item core.ListItem, selected bool, w int) string 
 	}
 
 	label := "team: " + item.TeamKey
-	headerStr := core.LeadBadgeStyle.Render(marker + " " + label)
-	countStr := core.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d %s", n, noun))
+	headerStr := m.styles.LeadBadgeStyle.Render(marker + " " + label)
+	countStr := m.styles.GroupHeaderDimStyle.Render(fmt.Sprintf("  %d %s", n, noun))
 	left := headerStr + countStr
 
 	var statusParts []string
 	if totalWorking > 0 {
-		statusParts = append(statusParts, core.StatusStyle(core.StatusWorking).Render(fmt.Sprintf("✻%d working", totalWorking)))
+		statusParts = append(statusParts, m.styles.StatusStyle(core.StatusWorking).Render(fmt.Sprintf("✻%d working", totalWorking)))
 	}
 	if totalWaiting > 0 {
-		statusParts = append(statusParts, core.StatusStyle(core.StatusWaitingInput).Render(fmt.Sprintf("◐%d waiting", totalWaiting)))
+		statusParts = append(statusParts, m.styles.StatusStyle(core.StatusWaitingInput).Render(fmt.Sprintf("◐%d waiting", totalWaiting)))
 	}
 	if totalIdle > 0 {
-		statusParts = append(statusParts, core.StatusStyle(core.StatusIdle).Render(fmt.Sprintf("○%d idle", totalIdle)))
+		statusParts = append(statusParts, m.styles.StatusStyle(core.StatusIdle).Render(fmt.Sprintf("○%d idle", totalIdle)))
 	}
 	right := strings.Join(statusParts, "  ")
 
 	if selected {
-		left = core.SelectedRowStyle.Render(marker+" "+label) + countStr
+		left = m.styles.SelectedRowStyle.Render(marker+" "+label) + countStr
 	}
 
 	leftW := lipgloss.Width(left)
@@ -337,7 +337,7 @@ func renderSessionRow(m Model, win core.ClaudeWindow, selected, expanded, inGrou
 	// Attached star prefix
 	name := win.DisplayName()
 	if win.SessionName == m.attachedSession && m.attachedSession != "" {
-		name = core.AttachedStarStyle.Render("★") + " " + name
+		name = m.styles.AttachedStarStyle.Render("★") + " " + name
 	}
 
 	// Determine expand marker
@@ -362,7 +362,7 @@ func renderSessionRow(m Model, win core.ClaudeWindow, selected, expanded, inGrou
 	// Build display name with marker
 	displayName := win.DisplayName()
 	if win.SessionName == m.attachedSession && m.attachedSession != "" {
-		displayName = core.AttachedStarStyle.Render("★") + " " + displayName
+		displayName = m.styles.AttachedStarStyle.Render("★") + " " + displayName
 	}
 	_ = name // unused now, using displayName
 
@@ -376,9 +376,9 @@ func renderSessionRow(m Model, win core.ClaudeWindow, selected, expanded, inGrou
 		_ = spinnerWin
 	}
 
-	line1 := renderSessionRowLine1WithSpinner(marker+displayName, win, selected, aggStatus, m.spinner.View(), showSource, w)
-	line2 := renderSessionRowLine2(win, inGroup, w)
-	line3 := renderSessionRowLine3(win)
+	line1 := renderSessionRowLine1WithSpinner(marker+displayName, win, selected, aggStatus, m.spinner.View(), showSource, w, m.styles)
+	line2 := renderSessionRowLine2(win, inGroup, w, m.styles)
+	line3 := renderSessionRowLine3(win, m.styles)
 
 	var sb strings.Builder
 	sb.WriteString(line1)
@@ -391,7 +391,7 @@ func renderSessionRow(m Model, win core.ClaudeWindow, selected, expanded, inGrou
 		sb.WriteString(line3)
 	}
 	if planExpanded {
-		sb.WriteString(renderSessionRowExpanded(win, w))
+		sb.WriteString(renderSessionRowExpanded(win, w, m.styles))
 	}
 	return sb.String()
 }
@@ -399,17 +399,17 @@ func renderSessionRow(m Model, win core.ClaudeWindow, selected, expanded, inGrou
 // renderSessionRowLine1WithSpinner is the wiring adapter between the model's
 // spinner state and the pure renderSessionRowLine1 function.
 // It substitutes the spinner glyph for the status symbol when working.
-func renderSessionRowLine1WithSpinner(nameWithMarker string, win core.ClaudeWindow, selected bool, aggStatus core.Status, spinnerView string, showSource bool, w int) string {
-	badge := buildBadgeStr(win, showSource)
+func renderSessionRowLine1WithSpinner(nameWithMarker string, win core.ClaudeWindow, selected bool, aggStatus core.Status, spinnerView string, showSource bool, w int, s core.Styles) string {
+	badge := buildBadgeStr(win, showSource, s)
 
 	// Status: use spinner glyph when working
 	var statusStr string
 	if aggStatus == core.StatusWorking {
-		statusStr = core.StatusStyle(aggStatus).Render(spinnerView)
+		statusStr = s.StatusStyle(aggStatus).Render(spinnerView)
 	} else {
-		statusStr = core.StatusStyle(aggStatus).Render(aggStatus.Symbol())
+		statusStr = s.StatusStyle(aggStatus).Render(aggStatus.Symbol())
 	}
-	statusLabel := core.StatusStyle(aggStatus).Render(aggStatus.Label())
+	statusLabel := s.StatusStyle(aggStatus).Render(aggStatus.Label())
 
 	saCount := len(win.Subagents)
 	if saCount == 0 {
@@ -420,12 +420,12 @@ func renderSessionRowLine1WithSpinner(nameWithMarker string, win core.ClaudeWind
 		if saCount == 1 {
 			noun = "subagent"
 		}
-		statusLabel += core.SubagentCountStyle.Render(fmt.Sprintf(" (%d %s)", saCount, noun))
+		statusLabel += s.SubagentCountStyle.Render(fmt.Sprintf(" (%d %s)", saCount, noun))
 	}
 
 	costStr := ""
 	if c := win.TotalCost(); c > 0 || win.Source == core.SourceCLI {
-		costStr = core.CostStyle.Render(fmt.Sprintf("$%.2f", c))
+		costStr = s.CostStyle.Render(fmt.Sprintf("$%.2f", c))
 	}
 
 	right := statusStr + " " + statusLabel
@@ -435,9 +435,9 @@ func renderSessionRowLine1WithSpinner(nameWithMarker string, win core.ClaudeWind
 
 	var nameRendered string
 	if selected {
-		nameRendered = core.SelectedRowStyle.Render(nameWithMarker)
+		nameRendered = s.SelectedRowStyle.Render(nameWithMarker)
 	} else {
-		nameRendered = core.NormalRowStyle.Render(nameWithMarker)
+		nameRendered = s.NormalRowStyle.Render(nameWithMarker)
 	}
 	left := nameRendered + badge
 
@@ -465,36 +465,36 @@ const (
 
 // buildBadgeStr assembles the source + team + worktree + pane-count badges
 // for a window row. Result is appended directly after the session name.
-func buildBadgeStr(win core.ClaudeWindow, showSource bool) string {
+func buildBadgeStr(win core.ClaudeWindow, showSource bool, s core.Styles) string {
 	badge := ""
 	if showSource {
 		switch win.Source {
 		case core.SourceCursor:
-			badge += core.CursorBadgeStyle.Render(" [CURSOR]")
+			badge += s.CursorBadgeStyle.Render(" [CURSOR]")
 		case core.SourceCLI:
-			badge += core.ClaudeBadgeStyle.Render(" [CLAUDE]")
+			badge += s.ClaudeBadgeStyle.Render(" [CLAUDE]")
 		case core.SourceCloud:
-			badge += core.CloudBadgeStyle.Render(" [CLOUD]")
+			badge += s.CloudBadgeStyle.Render(" [CLOUD]")
 		case core.SourceAutomation:
-			badge += core.AutomationBadgeStyle.Render(" [AUTO]")
+			badge += s.AutomationBadgeStyle.Render(" [AUTO]")
 		}
 	}
 	if win.TeamRole == "lead" {
-		badge += core.LeadBadgeStyle.Render(" [LEAD]")
+		badge += s.LeadBadgeStyle.Render(" [LEAD]")
 	} else if win.TeamRole == "teammate" {
-		badge += core.TeamBadgeStyle.Render(" [TEAM]")
+		badge += s.TeamBadgeStyle.Render(" [TEAM]")
 	}
 	switch win.SandboxType {
 	case "docker":
-		badge += lipgloss.NewStyle().Foreground(core.ColorCyan).Render(" 🐳")
+		badge += lipgloss.NewStyle().Foreground(s.ColorCyan).Render(" 🐳")
 	case "kubernetes":
-		badge += lipgloss.NewStyle().Foreground(core.ColorPurple).Render(" ⎈")
+		badge += lipgloss.NewStyle().Foreground(s.ColorPurple).Render(" ⎈")
 	}
 	if win.WorktreeBranch != "" {
-		badge += core.WorktreeBadgeStyle.Render(" ⎇ " + win.WorktreeBranch)
+		badge += s.WorktreeBadgeStyle.Render(" ⎇ " + win.WorktreeBranch)
 	}
 	if len(win.Panes) > 1 {
-		badge += core.PaneCountBadge.Render(fmt.Sprintf(" [%d]", len(win.Panes)))
+		badge += s.PaneCountBadge.Render(fmt.Sprintf(" [%d]", len(win.Panes)))
 	}
 	return badge
 }
@@ -504,15 +504,15 @@ func buildBadgeStr(win core.ClaudeWindow, showSource bool) string {
 //	marker  name  [badges]                    ● status  $cost
 //
 // marker should be " ", "▸ " or "▾ " — resolved by the caller.
-func renderSessionRowLine1(marker string, win core.ClaudeWindow, selected bool, w int) string {
+func renderSessionRowLine1(marker string, win core.ClaudeWindow, selected bool, w int, s core.Styles) string {
 	name := marker + win.DisplayName()
 	showSource := true // always show source badge on line 1
-	badge := buildBadgeStr(win, showSource)
+	badge := buildBadgeStr(win, showSource, s)
 
 	// Status + subagent count
 	aggStatus := win.AggregateStatus()
-	statusStr := core.StatusStyle(aggStatus).Render(aggStatus.Symbol())
-	statusLabel := core.StatusStyle(aggStatus).Render(aggStatus.Label())
+	statusStr := s.StatusStyle(aggStatus).Render(aggStatus.Symbol())
+	statusLabel := s.StatusStyle(aggStatus).Render(aggStatus.Label())
 	saCount := len(win.Subagents)
 	if saCount == 0 {
 		saCount = win.SubagentCount
@@ -522,13 +522,13 @@ func renderSessionRowLine1(marker string, win core.ClaudeWindow, selected bool, 
 		if saCount == 1 {
 			noun = "subagent"
 		}
-		statusLabel += core.SubagentCountStyle.Render(fmt.Sprintf(" (%d %s)", saCount, noun))
+		statusLabel += s.SubagentCountStyle.Render(fmt.Sprintf(" (%d %s)", saCount, noun))
 	}
 
 	// Cost
 	costStr := ""
 	if c := win.TotalCost(); c > 0 || win.Source == core.SourceCLI {
-		costStr = core.CostStyle.Render(fmt.Sprintf("$%.2f", c))
+		costStr = s.CostStyle.Render(fmt.Sprintf("$%.2f", c))
 	}
 
 	right := statusStr + " " + statusLabel
@@ -538,9 +538,9 @@ func renderSessionRowLine1(marker string, win core.ClaudeWindow, selected bool, 
 
 	var nameRendered string
 	if selected {
-		nameRendered = core.SelectedRowStyle.Render(name)
+		nameRendered = s.SelectedRowStyle.Render(name)
 	} else {
-		nameRendered = core.NormalRowStyle.Render(name)
+		nameRendered = s.NormalRowStyle.Render(name)
 	}
 	left := nameRendered + badge
 
@@ -556,7 +556,7 @@ func renderSessionRowLine1(marker string, win core.ClaudeWindow, selected bool, 
 // renderSessionRowLine2 renders the second line of a session row:
 //
 //	  path  (branch)  model  ■■□□ 3/10  › LastTool  [AGENT]  5 prompts  2h3m
-func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int) string {
+func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int, s core.Styles) string {
 	p := win.PrimaryPane()
 	if p == nil {
 		return ""
@@ -565,7 +565,7 @@ func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int) string {
 	var parts []string
 
 	if !inGroup {
-		parts = append(parts, core.DimRowStyle.Render(state.ShortenPath(p.WorkingDir)))
+		parts = append(parts, s.DimRowStyle.Render(state.ShortenPath(p.WorkingDir)))
 		if p.HasGit {
 			branchDisplay := p.GitBranch
 			if p.IsWorktree {
@@ -573,21 +573,21 @@ func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int) string {
 			} else {
 				branchDisplay = "(" + branchDisplay + ")"
 			}
-			gitStr := core.GitBranchStyle.Render(branchDisplay)
+			gitStr := s.GitBranchStyle.Render(branchDisplay)
 			if p.GitStaged {
-				gitStr += core.GitStagedStyle.Render("+")
+				gitStr += s.GitStagedStyle.Render("+")
 			}
 			if p.GitDirty {
-				gitStr += core.GitDirtyStyle.Render("*")
+				gitStr += s.GitDirtyStyle.Render("*")
 			}
 			parts = append(parts, gitStr)
 		}
 	}
 
 	if p.Model != "" {
-		modelStr := core.ModelNameStyle.Render(shortenModel(p.Model))
+		modelStr := s.ModelNameStyle.Render(shortenModel(p.Model))
 		if win.EffortLevel != "" {
-			modelStr += " " + core.EffortLevelStyle.Render(effortSymbol(win.EffortLevel))
+			modelStr += " " + s.EffortLevelStyle.Render(effortSymbol(win.EffortLevel))
 		}
 		parts = append(parts, modelStr)
 	}
@@ -609,28 +609,28 @@ func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int) string {
 			maxBlocks = planTotal
 		}
 		filled := (planDone * maxBlocks) / planTotal
-		bar := core.PlanBarFilledStyle.Render(strings.Repeat("■", filled)) +
-			core.PlanBarEmptyStyle.Render(strings.Repeat("□", maxBlocks-filled))
-		parts = append(parts, bar+" "+core.DimRowStyle.Render(fmt.Sprintf("%d/%d", planDone, planTotal)))
+		bar := s.PlanBarFilledStyle.Render(strings.Repeat("■", filled)) +
+			s.PlanBarEmptyStyle.Render(strings.Repeat("□", maxBlocks-filled))
+		parts = append(parts, bar+" "+s.DimRowStyle.Render(fmt.Sprintf("%d/%d", planDone, planTotal)))
 	}
 
 	// Agent mode badge
 	if win.Source != core.SourceCloud {
 		if win.AgentMode == "plan" {
-			parts = append(parts, core.PlanModeBadgeStyle.Render("[PLAN]"))
+			parts = append(parts, s.PlanModeBadgeStyle.Render("[PLAN]"))
 		} else if win.AgentMode == "agent" {
-			parts = append(parts, core.AgentModeBadgeStyle.Render("[AGENT]"))
+			parts = append(parts, s.AgentModeBadgeStyle.Render("[AGENT]"))
 		}
 		if win.PromptCount > 0 {
 			noun := "prompts"
 			if win.PromptCount == 1 {
 				noun = "prompt"
 			}
-			parts = append(parts, core.SessionStatsStyle.Render(fmt.Sprintf("%d %s", win.PromptCount, noun)))
+			parts = append(parts, s.SessionStatsStyle.Render(fmt.Sprintf("%d %s", win.PromptCount, noun)))
 		}
 		// Session duration
 		if dur := win.SessionDuration(); dur != "" {
-			parts = append(parts, core.SessionStatsStyle.Render(dur))
+			parts = append(parts, s.SessionStatsStyle.Render(dur))
 		}
 	} else {
 		// Cloud: summary + PR + duration
@@ -639,13 +639,13 @@ func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int) string {
 			if len(summary) > 50 {
 				summary = summary[:50] + "..."
 			}
-			parts = append(parts, core.SessionStatsStyle.Render(summary))
+			parts = append(parts, s.SessionStatsStyle.Render(summary))
 		}
 		if win.CloudPRURL != "" {
-			parts = append(parts, core.SessionStatsStyle.Render("PR"))
+			parts = append(parts, s.SessionStatsStyle.Render("PR"))
 		}
 		if dur := win.SessionDuration(); dur != "" {
-			parts = append(parts, core.SessionStatsStyle.Render(dur))
+			parts = append(parts, s.SessionStatsStyle.Render(dur))
 		}
 	}
 
@@ -656,32 +656,32 @@ func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int) string {
 }
 
 // subagentIcon returns a single-char icon and its color for a given agent type.
-func subagentIcon(agentType string) (string, color.Color) {
+func subagentIcon(agentType string, s core.Styles) (string, color.Color) {
 	switch strings.ToLower(agentType) {
 	case "explore":
-		return "⊕", core.ColorCyan
+		return "⊕", s.ColorCyan
 	case "bash", "shell":
-		return "$", core.ColorGreen
+		return "$", s.ColorGreen
 	case "browser", "browser-use":
-		return "◎", core.ColorPurple
+		return "◎", s.ColorPurple
 	case "code-reviewer", "code-simplifier":
-		return "✎", core.ColorYellow
+		return "✎", s.ColorYellow
 	case "plan":
-		return "☰", core.ColorYellow
+		return "☰", s.ColorYellow
 	case "debug":
-		return "⊗", core.ColorRed
+		return "⊗", s.ColorRed
 	case "test":
-		return "◉", core.ColorGreen
+		return "◉", s.ColorGreen
 	default:
-		return "◆", core.ColorPurple
+		return "◆", s.ColorPurple
 	}
 }
 
 // subagentLine builds a display string for one subagent:
 // "icon  description  ›  CurrentTool(input)"
 // descLimit controls description truncation.
-func subagentLine(sa core.Subagent, descLimit int) string {
-	icon, iconColor := subagentIcon(sa.AgentType)
+func subagentLine(sa core.Subagent, descLimit int, s core.Styles) string {
+	icon, iconColor := subagentIcon(sa.AgentType, s)
 	iconStr := lipgloss.NewStyle().Foreground(iconColor).Render(icon)
 
 	name := sa.Description
@@ -695,9 +695,9 @@ func subagentLine(sa core.Subagent, descLimit int) string {
 
 	// Sandbox badge
 	if sa.SandboxType == "docker" {
-		line += "  " + lipgloss.NewStyle().Foreground(core.ColorCyan).Render("[⬡ docker]")
+		line += "  " + lipgloss.NewStyle().Foreground(s.ColorCyan).Render("[⬡ docker]")
 	} else if sa.SandboxType == "kubernetes" {
-		line += "  " + lipgloss.NewStyle().Foreground(core.ColorPurple).Render("[⬡ k8s]")
+		line += "  " + lipgloss.NewStyle().Foreground(s.ColorPurple).Render("[⬡ k8s]")
 	}
 
 	if sa.CurrentTool != "" {
@@ -705,10 +705,10 @@ func subagentLine(sa core.Subagent, descLimit int) string {
 		if sa.CurrentToolInput != "" {
 			tool += "(" + truncate(sa.CurrentToolInput, sessionTruncTool) + ")"
 		}
-		line += "  " + core.DimRowStyle.Render("›")+" "+core.ActivityItemStyle.Render(tool)
+		line += "  " + s.DimRowStyle.Render("›")+" "+s.ActivityItemStyle.Render(tool)
 	}
 	if sa.StartedAt != "" {
-		line += "  " + core.SessionStatsStyle.Render(sa.StartedAt)
+		line += "  " + s.SessionStatsStyle.Render(sa.StartedAt)
 	}
 	return line
 }
@@ -717,7 +717,7 @@ func subagentLine(sa core.Subagent, descLimit int) string {
 // active subagents. Only shown when the session is actively working.
 //
 //	  › Bash(go build ./...)  ·  ⊕ Explore(find auth)  ·  ⊕ Explore(read files)
-func renderSessionRowLine3(win core.ClaudeWindow) string {
+func renderSessionRowLine3(win core.ClaudeWindow, s core.Styles) string {
 	if win.AggregateStatus() != core.StatusWorking {
 		return ""
 	}
@@ -727,12 +727,12 @@ func renderSessionRowLine3(win core.ClaudeWindow) string {
 
 	// Main session last tool
 	if p != nil && p.LastTool != "" {
-		parts = append(parts, core.ActivityItemStyle.Render("› "+p.LastTool))
+		parts = append(parts, s.ActivityItemStyle.Render("› "+p.LastTool))
 	}
 
 	// Active subagents — one entry per subagent using type icon + description
 	for _, sa := range win.Subagents {
-		parts = append(parts, subagentLine(sa, sessionTruncDesc))
+		parts = append(parts, subagentLine(sa, sessionTruncDesc, s))
 	}
 
 	if len(parts) == 0 {
@@ -753,7 +753,7 @@ func renderSessionRowLine3(win core.ClaudeWindow) string {
 //	└─ activity
 //	   › Bash(go build ./...)
 //	   ⊕ Explore(find auth)  › Grep(password)
-func renderSessionRowExpanded(win core.ClaudeWindow, _ int) string {
+func renderSessionRowExpanded(win core.ClaudeWindow, _ int, s core.Styles) string {
 	todos := win.TaskTodos
 	if len(todos) == 0 {
 		todos = win.ActivePlanTodos
@@ -773,13 +773,13 @@ func renderSessionRowExpanded(win core.ClaudeWindow, _ int) string {
 		if !hasActivity {
 			tasksConnector = "└─"
 		}
-		sb.WriteString("\n  " + core.TaskSectionStyle.Render(tasksConnector+" tasks"))
+		sb.WriteString("\n  " + s.TaskSectionStyle.Render(tasksConnector+" tasks"))
 		for i, t := range todos {
 			num := fmt.Sprintf("%d.", i+1)
-			icon, style := taskIconStyle(t.Status)
+			icon, style := taskIconStyle(t.Status, s)
 			content := truncate(t.Content, sessionTruncTodo)
 			sb.WriteString(fmt.Sprintf("\n  │  %s %s",
-				core.TaskSectionStyle.Render(num),
+				s.TaskSectionStyle.Render(num),
 				style.Render(icon+" "+content)))
 		}
 		if hasActivity {
@@ -788,7 +788,7 @@ func renderSessionRowExpanded(win core.ClaudeWindow, _ int) string {
 	}
 
 	if hasActivity {
-		sb.WriteString("\n  " + core.ActivitySectionStyle.Render("└─ activity"))
+		sb.WriteString("\n  " + s.ActivitySectionStyle.Render("└─ activity"))
 
 		// Build parent→children map for hierarchy
 		byID := make(map[string]*core.Subagent, len(win.Subagents))
@@ -811,13 +811,13 @@ func renderSessionRowExpanded(win core.ClaudeWindow, _ int) string {
 			if isLastRoot {
 				conn = "   └─"
 			}
-			sb.WriteString("\n  " + core.DimRowStyle.Render(conn) + " " + subagentLine(sa, sessionTruncDescExp))
+			sb.WriteString("\n  " + s.DimRowStyle.Render(conn) + " " + subagentLine(sa, sessionTruncDescExp, s))
 			for j, child := range children[sa.ID] {
 				childConn := "   │  ├─"
 				if j == len(children[sa.ID])-1 {
 					childConn = "   │  └─"
 				}
-				sb.WriteString("\n  " + core.DimRowStyle.Render(childConn) + " " + subagentLine(child, sessionTruncDescExp))
+				sb.WriteString("\n  " + s.DimRowStyle.Render(childConn) + " " + subagentLine(child, sessionTruncDescExp, s))
 			}
 		}
 	}
@@ -826,16 +826,16 @@ func renderSessionRowExpanded(win core.ClaudeWindow, _ int) string {
 }
 
 // taskIconStyle returns the icon and lipgloss style for a task/todo item.
-func taskIconStyle(status string) (string, lipgloss.Style) {
+func taskIconStyle(status string, s core.Styles) (string, lipgloss.Style) {
 	switch status {
 	case "completed":
-		return "✓", lipgloss.NewStyle().Foreground(core.ColorGreen)
+		return "✓", lipgloss.NewStyle().Foreground(s.ColorGreen)
 	case "in_progress":
-		return "●", core.TaskActiveStyle
+		return "●", s.TaskActiveStyle
 	case "cancelled":
-		return "✗", lipgloss.NewStyle().Foreground(core.ColorRed)
+		return "✗", lipgloss.NewStyle().Foreground(s.ColorRed)
 	default:
-		return "○", core.TaskPendingStyle
+		return "○", s.TaskPendingStyle
 	}
 }
 
@@ -855,20 +855,20 @@ func sandboxEmoji(sandboxType string) string {
 
 // renderPaneRow renders an expanded child pane row.
 // Shows: connector  paneID  status  sandbox-emoji  [⎇ branch if worktree]
-func renderPaneRow(pane core.ClaudePane, isLast bool, selected bool, _ int) string {
+func renderPaneRow(pane core.ClaudePane, isLast bool, selected bool, _ int, s core.Styles) string {
 	connector := "├─"
 	if isLast {
 		connector = "└─"
 	}
 
-	statusStr := core.StatusStyle(pane.Status).Render(pane.Status.Symbol())
-	statusLabel := core.StatusStyle(pane.Status).Render(pane.Status.Label())
+	statusStr := s.StatusStyle(pane.Status).Render(pane.Status.Symbol())
+	statusLabel := s.StatusStyle(pane.Status).Render(pane.Status.Label())
 
 	emoji := sandboxEmoji(pane.SandboxType)
 
 	var context string
 	if pane.IsWorktree && pane.GitBranch != "" {
-		context = emoji + "  " + core.WorktreeBadgeStyle.Render("⎇ "+pane.GitBranch)
+		context = emoji + "  " + s.WorktreeBadgeStyle.Render("⎇ "+pane.GitBranch)
 	} else {
 		context = emoji
 	}
@@ -880,7 +880,7 @@ func renderPaneRow(pane core.ClaudePane, isLast bool, selected bool, _ int) stri
 
 	line := fmt.Sprintf("%s%s %s  %s %s  %s", prefix, connector, pane.PaneID, statusStr, statusLabel, context)
 	if selected {
-		return core.SelectedRowStyle.Render(line)
+		return s.SelectedRowStyle.Render(line)
 	}
 	return line
 }
