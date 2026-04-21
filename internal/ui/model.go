@@ -160,12 +160,30 @@ type Model struct {
 	quitting bool
 }
 
+// themeOverride checks TMUX_OVERSEER_THEME and overrides the detected value.
+// Accepted values: "light" forces light mode, "dark" forces dark mode.
+// Any other value (or unset) returns the detected value unchanged.
+func themeOverride(detected bool) bool {
+	switch os.Getenv("TMUX_OVERSEER_THEME") {
+	case "dark":
+		return true
+	case "light":
+		return false
+	default:
+		return detected
+	}
+}
+
+func detectDarkBackground() bool {
+	return themeOverride(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+}
+
 // InitialModel creates the initial Bubble Tea model.
 // If a sessions cache exists on disk, it is loaded immediately so the UI
 // renders the session list on the very first frame instead of a loading screen.
 // A background refresh is always fired from Init() to update stale data.
 func InitialModel() Model {
-	styles := core.NewStyles(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	styles := core.NewStyles(detectDarkBackground())
 
 	s := spinner.New(
 		spinner.WithSpinner(core.ClaudeFlowerSpinner),
@@ -287,7 +305,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.BackgroundColorMsg:
-		m.styles = core.NewStyles(msg.IsDark())
+		m.styles = core.NewStyles(themeOverride(msg.IsDark()))
 		return m, nil
 
 	case core.TickMsg:
