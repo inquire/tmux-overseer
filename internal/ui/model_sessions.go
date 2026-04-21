@@ -140,8 +140,8 @@ func (m Model) handleSessionListKey(key string) (tea.Model, tea.Cmd) {
 		if m.previewHeight > 4 {
 			m.previewHeight--
 			m.previewOffset = 0
-			listH := state.MaxInt(3, m.height-m.previewHeight-9)
-			m.scroll.SetViewHeight(listH / 2)
+			listH := state.MaxInt(3, m.height-m.previewHeight-7)
+			m.scroll.SetViewHeight(listH / 3)
 		}
 
 	case "]":
@@ -149,8 +149,8 @@ func (m Model) handleSessionListKey(key string) (tea.Model, tea.Cmd) {
 		if m.previewHeight < 20 {
 			m.previewHeight++
 			m.previewOffset = 0
-			listH := state.MaxInt(3, m.height-m.previewHeight-9)
-			m.scroll.SetViewHeight(listH / 2)
+			listH := state.MaxInt(3, m.height-m.previewHeight-7)
+			m.scroll.SetViewHeight(listH / 3)
 		}
 
 	case "J":

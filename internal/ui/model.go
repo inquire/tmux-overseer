@@ -287,10 +287,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		// Session list gets: total height minus fixed chrome.
-		// Fixed chrome = header(3) + newlines/seps + preview(previewHeight+2) + statusbar(1) + footer(1)
-		listHeightInLines := state.MaxInt(3, msg.Height-m.previewHeight-9)
+		// Fixed chrome = header(3) + preview(previewHeight+2) + statusbar(1) + footer(1) + 4 newline separators = previewHeight+11
+		// But newline separators connect sections (don't add extra lines), so: 3 + (previewHeight+2) + 1 + 1 = previewHeight+7
+		listHeightInLines := state.MaxInt(3, msg.Height-m.previewHeight-7)
 		// ViewHeight is in items. Sessions vary from 2 lines (minimal) to 12+ (with tasks).
-		// Use line budget directly — renderSessionList uses ViewHeight*2 as maxLines so
+		// Use line budget directly — renderSessionList uses ViewHeight*3 as maxLines so
 		// set ViewHeight = listHeightInLines/3 to keep that budget equal to available lines.
 		listHeightInItems := state.MaxInt(1, listHeightInLines/3)
 		m.scroll.SetViewHeight(listHeightInItems)

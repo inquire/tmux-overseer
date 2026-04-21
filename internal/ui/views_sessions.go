@@ -111,13 +111,6 @@ func renderSessionList(m Model, w int) string {
 		lineCount += len(rowLines)
 	}
 
-	// Pad to fill available space
-	paddingStart := lineCount
-	for lineCount < maxLines {
-		lines = append(lines, "")
-		lineCount++
-	}
-
 	// Scroll indicators on the right edge
 	if hasItemsAbove && len(lines) > 0 {
 		indicator := " " + m.styles.ScrollIndicatorStyle.Render("▲")
@@ -130,8 +123,8 @@ func renderSessionList(m Model, w int) string {
 		}
 	}
 
-	if hasItemsBelow && paddingStart > 0 {
-		lastContentLine := paddingStart - 1
+	if hasItemsBelow && len(lines) > 0 {
+		lastContentLine := len(lines) - 1
 		indicator := " " + m.styles.ScrollIndicatorStyle.Render("▼")
 		currentWidth := lipgloss.Width(lines[lastContentLine])
 		padding := w - currentWidth - 3
