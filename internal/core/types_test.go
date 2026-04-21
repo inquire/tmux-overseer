@@ -91,15 +91,16 @@ func TestCompletionPct(t *testing.T) {
 }
 
 func TestTagPillStyle(t *testing.T) {
+	styles := NewStyles(true)
 	// Same tag should always produce the same style
-	s1 := TagPillStyle("refactor")
-	s2 := TagPillStyle("refactor")
+	s1 := styles.TagPillStyle("refactor")
+	s2 := styles.TagPillStyle("refactor")
 	if s1.GetForeground() != s2.GetForeground() {
 		t.Error("TagPillStyle should be deterministic for the same tag")
 	}
 
 	// Different tags should (usually) produce different styles
-	s3 := TagPillStyle("auth")
+	s3 := styles.TagPillStyle("auth")
 	if s1.GetForeground() == s3.GetForeground() {
 		t.Log("TagPillStyle: 'refactor' and 'auth' happened to collide (acceptable)")
 	}

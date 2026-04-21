@@ -24,33 +24,33 @@ func renderActionMenu(m Model, _ int) string {
 
 	var lines []string
 
-	statusStr := core.StatusStyle(p.Status).Render(p.Status.Symbol() + " " + p.Status.Label())
+	statusStr := m.styles.StatusStyle(p.Status).Render(p.Status.Symbol() + " " + p.Status.Label())
 
 	lines = append(lines,
-		core.ActionLabelStyle.Render("  session    ")+core.ActionValueStyle.Render(win.SessionName),
-		core.ActionLabelStyle.Render("  window     ")+core.ActionValueStyle.Render(fmt.Sprintf("%d (%d panes)", win.WindowIndex, len(win.Panes))),
-		core.ActionLabelStyle.Render("  status     ")+statusStr,
+		m.styles.ActionLabelStyle.Render("  session    ")+m.styles.ActionValueStyle.Render(win.SessionName),
+		m.styles.ActionLabelStyle.Render("  window     ")+m.styles.ActionValueStyle.Render(fmt.Sprintf("%d (%d panes)", win.WindowIndex, len(win.Panes))),
+		m.styles.ActionLabelStyle.Render("  status     ")+statusStr,
 	)
 	if p.Model != "" {
-		lines = append(lines, core.ActionLabelStyle.Render("  model      ")+core.ActionValueStyle.Render(p.Model))
+		lines = append(lines, m.styles.ActionLabelStyle.Render("  model      ")+m.styles.ActionValueStyle.Render(p.Model))
 	}
-	lines = append(lines, core.ActionLabelStyle.Render("  cost       ")+core.CostStyle.Render(fmt.Sprintf("$%.2f", win.TotalCost())))
+	lines = append(lines, m.styles.ActionLabelStyle.Render("  cost       ")+m.styles.CostStyle.Render(fmt.Sprintf("$%.2f", win.TotalCost())))
 	if win.ActivePlanTitle != "" {
-		planLine := core.ActionLabelStyle.Render("  plan       ") + core.ActionValueStyle.Render(win.ActivePlanTitle)
+		planLine := m.styles.ActionLabelStyle.Render("  plan       ") + m.styles.ActionValueStyle.Render(win.ActivePlanTitle)
 		if win.ActivePlanTotal > 0 {
 			maxB := 10
 			if win.ActivePlanTotal < maxB {
 				maxB = win.ActivePlanTotal
 			}
 			filled := (win.ActivePlanDone * maxB) / win.ActivePlanTotal
-			bar := core.PlanBarFilledStyle.Render(strings.Repeat("■", filled)) +
-				core.PlanBarEmptyStyle.Render(strings.Repeat("□", maxB-filled))
-			planLine += "  " + bar + core.DimRowStyle.Render(fmt.Sprintf(" %d/%d", win.ActivePlanDone, win.ActivePlanTotal))
+			bar := m.styles.PlanBarFilledStyle.Render(strings.Repeat("■", filled)) +
+				m.styles.PlanBarEmptyStyle.Render(strings.Repeat("□", maxB-filled))
+			planLine += "  " + bar + m.styles.DimRowStyle.Render(fmt.Sprintf(" %d/%d", win.ActivePlanDone, win.ActivePlanTotal))
 		}
 		lines = append(lines, planLine)
 	}
 	lines = append(lines,
-		core.ActionLabelStyle.Render("  path       ")+core.ActionValueStyle.Render(state.ShortenPath(p.WorkingDir)),
+		m.styles.ActionLabelStyle.Render("  path       ")+m.styles.ActionValueStyle.Render(state.ShortenPath(p.WorkingDir)),
 	)
 	if p.HasGit {
 		gitInfo := p.GitBranch
@@ -60,7 +60,7 @@ func renderActionMenu(m Model, _ int) string {
 		if p.GitDirty {
 			gitInfo += " *"
 		}
-		lines = append(lines, core.ActionLabelStyle.Render("  branch     ")+core.GitBranchStyle.Render(gitInfo))
+		lines = append(lines, m.styles.ActionLabelStyle.Render("  branch     ")+m.styles.GitBranchStyle.Render(gitInfo))
 	}
 
 	lines = append(lines, "")
@@ -97,23 +97,23 @@ func renderActionMenu(m Model, _ int) string {
 		action := m.actions[i]
 
 		if action.IsSeparatorBefore() {
-			lines = append(lines, core.ActionSeparatorStyle.Render("  ──────────"))
+			lines = append(lines, m.styles.ActionSeparatorStyle.Render("  ──────────"))
 		}
 
 		prefix := "  "
 		if i == m.actionIdx {
 			prefix = "> "
-			lines = append(lines, core.ActionSelectedStyle.Render(prefix+action.Label()))
+			lines = append(lines, m.styles.ActionSelectedStyle.Render(prefix+action.Label()))
 		} else {
-			lines = append(lines, core.ActionNormalStyle.Render(prefix+action.Label()))
+			lines = append(lines, m.styles.ActionNormalStyle.Render(prefix+action.Label()))
 		}
 	}
 
 	if hasActionsAbove {
-		lines[metadataLines] = lines[metadataLines] + " " + core.ScrollIndicatorStyle.Render("▲")
+		lines[metadataLines] = lines[metadataLines] + " " + m.styles.ScrollIndicatorStyle.Render("▲")
 	}
 	if hasActionsBelow && len(lines) > 0 {
-		lines[len(lines)-1] = lines[len(lines)-1] + " " + core.ScrollIndicatorStyle.Render("▼")
+		lines[len(lines)-1] = lines[len(lines)-1] + " " + m.styles.ScrollIndicatorStyle.Render("▼")
 	}
 
 	return strings.Join(lines, "\n")
@@ -121,29 +121,29 @@ func renderActionMenu(m Model, _ int) string {
 
 // renderEmpty renders the empty/loading state.
 func renderEmpty(m Model, _ int) string {
-	spinnerStr := core.StatusStyle(core.StatusWorking).Render(m.spinner.View())
+	spinnerStr := m.styles.StatusStyle(core.StatusWorking).Render(m.spinner.View())
 
 	if m.loading {
 		scanClaude := "      " + spinnerStr +
-			core.EmptyMessageStyle.Render("  scanning ") +
-			core.ClaudeBadgeStyle.Render("claude code") +
-			core.EmptyMessageStyle.Render(" sessions")
+			m.styles.EmptyMessageStyle.Render("  scanning ") +
+			m.styles.ClaudeBadgeStyle.Render("claude code") +
+			m.styles.EmptyMessageStyle.Render(" sessions")
 		scanCursor := "      " + spinnerStr +
-			core.EmptyMessageStyle.Render("  scanning ") +
-			core.CursorBadgeStyle.Render("cursor ide") +
-			core.EmptyMessageStyle.Render(" sessions")
+			m.styles.EmptyMessageStyle.Render("  scanning ") +
+			m.styles.CursorBadgeStyle.Render("cursor ide") +
+			m.styles.EmptyMessageStyle.Render(" sessions")
 		return strings.Join([]string{"", scanClaude, scanCursor, ""}, "\n")
 	}
 
 	lines := []string{
 		"",
-		core.EmptyMessageStyle.Render("      no sessions found"),
+		m.styles.EmptyMessageStyle.Render("      no sessions found"),
 		"",
-		core.EmptyMessageStyle.Render("      start " + core.ClaudeBadgeStyle.Render("Claude Code") + core.EmptyMessageStyle.Render(" in a tmux pane")),
-		core.EmptyMessageStyle.Render("      or open " + core.CursorBadgeStyle.Render("Cursor IDE") + core.EmptyMessageStyle.Render(" with hooks enabled")),
-		core.EmptyMessageStyle.Render("      and come back here " + spinnerStr),
+		m.styles.EmptyMessageStyle.Render("      start " + m.styles.ClaudeBadgeStyle.Render("Claude Code") + m.styles.EmptyMessageStyle.Render(" in a tmux pane")),
+		m.styles.EmptyMessageStyle.Render("      or open " + m.styles.CursorBadgeStyle.Render("Cursor IDE") + m.styles.EmptyMessageStyle.Render(" with hooks enabled")),
+		m.styles.EmptyMessageStyle.Render("      and come back here " + spinnerStr),
 		"",
-		core.EmptyMessageStyle.Render("      press " + core.FooterKeyStyle.Render("n") + core.EmptyMessageStyle.Render(" to create a new session")),
+		m.styles.EmptyMessageStyle.Render("      press " + m.styles.FooterKeyStyle.Render("n") + m.styles.EmptyMessageStyle.Render(" to create a new session")),
 		"",
 	}
 
@@ -152,7 +152,7 @@ func renderEmpty(m Model, _ int) string {
 
 // renderFilterBar renders the filter input overlay.
 func renderFilterBar(m Model, _ int) string {
-	return " " + core.FooterKeyStyle.Render("/") + " filter: " + m.textInput.View()
+	return " " + m.styles.FooterKeyStyle.Render("/") + " filter: " + m.textInput.View()
 }
 
 // renderSendInputBar renders the send input overlay.
@@ -161,49 +161,49 @@ func renderSendInputBar(m Model, _ int) string {
 	if m.actionWindow != nil {
 		target = m.actionWindow.SessionName
 	}
-	return " " + core.FooterKeyStyle.Render("send to "+target+":") + " " + m.textInput.View() +
-		"  " + core.FooterStyle.Render(core.FooterKeyStyle.Render("enter")+" send  "+core.FooterKeyStyle.Render("esc")+" cancel")
+	return " " + m.styles.FooterKeyStyle.Render("send to "+target+":") + " " + m.textInput.View() +
+		"  " + m.styles.FooterStyle.Render(m.styles.FooterKeyStyle.Render("enter")+" send  "+m.styles.FooterKeyStyle.Render("esc")+" cancel")
 }
 
 // renderConfirmBar renders the confirmation prompt.
 func renderConfirmBar(m Model, _ int) string {
-	return " " + core.ErrorStyle.Render(m.confirmMsg) + "  " +
-		core.FooterStyle.Render(core.FooterKeyStyle.Render("y/enter")+" confirm  "+core.FooterKeyStyle.Render("n/esc")+" cancel")
+	return " " + m.styles.ErrorStyle.Render(m.confirmMsg) + "  " +
+		m.styles.FooterStyle.Render(m.styles.FooterKeyStyle.Render("y/enter")+" confirm  "+m.styles.FooterKeyStyle.Render("n/esc")+" cancel")
 }
 
 // renderDialogBar renders a generic single-field dialog in the footer area.
 func renderDialogBar(m Model, _ int, title, _ string) string {
-	return " " + core.FooterKeyStyle.Render(title+":") + " " + m.textInput.View() +
-		"  " + core.FooterStyle.Render(core.FooterKeyStyle.Render("enter")+" confirm  "+core.FooterKeyStyle.Render("esc")+" cancel")
+	return " " + m.styles.FooterKeyStyle.Render(title+":") + " " + m.textInput.View() +
+		"  " + m.styles.FooterStyle.Render(m.styles.FooterKeyStyle.Render("enter")+" confirm  "+m.styles.FooterKeyStyle.Render("esc")+" cancel")
 }
 
 // renderHelp renders the full keybinding help overlay.
-func renderHelp(_ Model, w int) string {
+func renderHelp(m Model, w int) string {
 	content := `
   Navigation
-  ` + core.FooterKeyStyle.Render("↑/k") + `     move up
-  ` + core.FooterKeyStyle.Render("↓/j") + `     move down
-  ` + core.FooterKeyStyle.Render("l/→") + `     open actions
-  ` + core.FooterKeyStyle.Render("tab") + `     expand/collapse panes
-  ` + core.FooterKeyStyle.Render("enter") + `   switch to session
-  
+  ` + m.styles.FooterKeyStyle.Render("↑/k") + `     move up
+  ` + m.styles.FooterKeyStyle.Render("↓/j") + `     move down
+  ` + m.styles.FooterKeyStyle.Render("l/→") + `     open actions
+  ` + m.styles.FooterKeyStyle.Render("tab") + `     expand/collapse panes
+  ` + m.styles.FooterKeyStyle.Render("enter") + `   switch to session
+
   Actions
-  ` + core.FooterKeyStyle.Render("n") + `       new session
-  ` + core.FooterKeyStyle.Render("i") + `       send input
-  ` + core.FooterKeyStyle.Render("d") + `       kill session
-  ` + core.FooterKeyStyle.Render("s") + `       cycle sort mode
-  ` + core.FooterKeyStyle.Render("/") + `       filter
-  ` + core.FooterKeyStyle.Render("f") + `       source filter
-  ` + core.FooterKeyStyle.Render("p") + `       plans browser
-  ` + core.FooterKeyStyle.Render("R") + `       refresh
-  
-  ` + core.FooterKeyStyle.Render("q/esc") + `   quit
-  
-  ` + core.DimRowStyle.Render("press any key to close")
+  ` + m.styles.FooterKeyStyle.Render("n") + `       new session
+  ` + m.styles.FooterKeyStyle.Render("i") + `       send input
+  ` + m.styles.FooterKeyStyle.Render("d") + `       kill session
+  ` + m.styles.FooterKeyStyle.Render("s") + `       cycle sort mode
+  ` + m.styles.FooterKeyStyle.Render("/") + `       filter
+  ` + m.styles.FooterKeyStyle.Render("f") + `       source filter
+  ` + m.styles.FooterKeyStyle.Render("p") + `       plans browser
+  ` + m.styles.FooterKeyStyle.Render("R") + `       refresh
+
+  ` + m.styles.FooterKeyStyle.Render("q/esc") + `   quit
+
+  ` + m.styles.DimRowStyle.Render("press any key to close")
 
 	boxWidth := state.MinInt(42, w-4)
-	box := core.DialogBorderStyle.Width(boxWidth).Render(
-		core.DialogTitleStyle.Render("Keybindings") + content,
+	box := m.styles.DialogBorderStyle.Width(boxWidth).Render(
+		m.styles.DialogTitleStyle.Render("Keybindings") + content,
 	)
 
 	padding := (w - lipgloss.Width(box)) / 2
@@ -225,27 +225,27 @@ func renderLoadingScreen(m Model) string {
 		h = 24
 	}
 
-	spinnerStr := core.StatusStyle(core.StatusWorking).Render(m.spinner.View())
-	dim := lipgloss.NewStyle().Foreground(core.ColorDim)
-	gray := lipgloss.NewStyle().Foreground(core.ColorGray)
+	spinnerStr := m.styles.StatusStyle(core.StatusWorking).Render(m.spinner.View())
+	dim := lipgloss.NewStyle().Foreground(m.styles.ColorDim)
+	gray := lipgloss.NewStyle().Foreground(m.styles.ColorGray)
 
 	title := lipgloss.NewStyle().
-		Foreground(core.ColorCyan).
+		Foreground(m.styles.ColorCyan).
 		Bold(true).
 		Render("claude overseer")
 
 	subtitle := dim.Render("session monitor")
 
 	scanClaude := spinnerStr + gray.Render("  scanning ") +
-		core.ClaudeBadgeStyle.Render("claude code") +
+		m.styles.ClaudeBadgeStyle.Render("claude code") +
 		gray.Render(" sessions")
 	scanCursor := spinnerStr + gray.Render("  scanning ") +
-		core.CursorBadgeStyle.Render("cursor ide") +
+		m.styles.CursorBadgeStyle.Render("cursor ide") +
 		gray.Render(" sessions")
 
 	rule := dim.Render("─────────────────────")
 
-	mascotLines := strings.Split(core.RenderMascot(), "\n")
+	mascotLines := strings.Split(m.styles.RenderMascot(), "\n")
 	maxMascotWidth := 0
 	for _, ml := range mascotLines {
 		if lw := lipgloss.Width(ml); lw > maxMascotWidth {

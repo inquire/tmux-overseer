@@ -60,12 +60,13 @@ func (m *Model) fetchPreview(paneID string) tea.Cmd {
 	}
 
 	if source == core.SourceCloud && w != nil {
-		content := renderCloudPreview(w)
+		content := renderCloudPreview(w, m.styles)
 		return func() tea.Msg {
 			return core.PreviewMsg{Content: content, PaneID: paneID}
 		}
 	}
 
+	styles := m.styles
 	return func() tea.Msg {
 		defer cancel()
 		select {
@@ -78,8 +79,8 @@ func (m *Model) fetchPreview(paneID string) tea.Cmd {
 		switch {
 		case source == core.SourceCursor && convID != "":
 			events := detect.ReadCursorEventsRaw(convID, 60)
-			header := renderPreviewHeader(win)
-			body := renderEventPreview(events, win)
+			header := renderPreviewHeader(win, styles)
+			body := renderEventPreview(events, win, styles)
 			if body == "" {
 				body = detect.ReadCursorActivityLog(convID, 20)
 			}
@@ -87,9 +88,9 @@ func (m *Model) fetchPreview(paneID string) tea.Cmd {
 
 		case source == core.SourceCLI:
 			events := detect.ReadCLIEventsRaw(paneID, 60)
-			header := renderPreviewHeader(win)
+			header := renderPreviewHeader(win, styles)
 			if len(events) > 0 {
-				body := renderEventPreview(events, win)
+				body := renderEventPreview(events, win, styles)
 				content = joinPreviewSections(header, body)
 			} else {
 				// Fall back to raw pane capture; strip ANSI before display.
@@ -140,12 +141,13 @@ func (m *Model) previewCmd() tea.Cmd {
 	}
 
 	if source == core.SourceCloud && w != nil {
-		content := renderCloudPreview(w)
+		content := renderCloudPreview(w, m.styles)
 		return func() tea.Msg {
 			return core.PreviewMsg{Content: content, PaneID: paneID}
 		}
 	}
 
+	styles := m.styles
 	return func() tea.Msg {
 		defer cancel()
 
@@ -153,8 +155,8 @@ func (m *Model) previewCmd() tea.Cmd {
 		switch {
 		case source == core.SourceCursor && convID != "":
 			events := detect.ReadCursorEventsRaw(convID, 60)
-			header := renderPreviewHeader(win)
-			body := renderEventPreview(events, win)
+			header := renderPreviewHeader(win, styles)
+			body := renderEventPreview(events, win, styles)
 			if body == "" {
 				body = detect.ReadCursorActivityLog(convID, 20)
 			}
@@ -162,9 +164,9 @@ func (m *Model) previewCmd() tea.Cmd {
 
 		case source == core.SourceCLI:
 			events := detect.ReadCLIEventsRaw(paneID, 60)
-			header := renderPreviewHeader(win)
+			header := renderPreviewHeader(win, styles)
 			if len(events) > 0 {
-				body := renderEventPreview(events, win)
+				body := renderEventPreview(events, win, styles)
 				content = joinPreviewSections(header, body)
 			} else {
 				raw := tmux.CapturePaneContentCtx(ctx, paneID, 25)
@@ -208,22 +210,22 @@ func joinPreviewSections(header, body string) string {
 // Prompts anchor each "turn" with a dim timestamp; tools are paired on one line;
 // responses flow below their turn without extra prefixes.
 // Events tagged with agent_id are rendered nested under their subagent_start/stop block.
-func renderEventPreview(events []core.CursorEvent, w *core.ClaudeWindow) string {
+func renderEventPreview(events []core.CursorEvent, w *core.ClaudeWindow, s core.Styles) string {
 	if len(events) == 0 {
 		return ""
 	}
 
 	var (
-		tsStyle        = lipgloss.NewStyle().Foreground(core.ColorDim)
-		promptStyle    = lipgloss.NewStyle().Foreground(core.ColorWhite).Bold(true)
-		toolStyle      = lipgloss.NewStyle().Foreground(core.ColorCyan)
-		resultStyle    = lipgloss.NewStyle().Foreground(core.ColorDim)
-		resultOkStyle  = lipgloss.NewStyle().Foreground(core.ColorGreen)
-		resultErrStyle = lipgloss.NewStyle().Foreground(core.ColorRed)
-		responseStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("#CCCCCC"))
-		fileStyle      = lipgloss.NewStyle().Foreground(core.ColorYellow)
-		subStyle       = lipgloss.NewStyle().Foreground(core.ColorPurple)
-		dimStyle       = lipgloss.NewStyle().Foreground(core.ColorDim)
+		tsStyle        = lipgloss.NewStyle().Foreground(s.ColorDim)
+		promptStyle    = lipgloss.NewStyle().Foreground(s.ColorWhite).Bold(true)
+		toolStyle      = lipgloss.NewStyle().Foreground(s.ColorCyan)
+		resultStyle    = lipgloss.NewStyle().Foreground(s.ColorDim)
+		resultOkStyle  = lipgloss.NewStyle().Foreground(s.ColorGreen)
+		resultErrStyle = lipgloss.NewStyle().Foreground(s.ColorRed)
+		responseStyle  = lipgloss.NewStyle().Foreground(s.NormalRowStyle.GetForeground())
+		fileStyle      = lipgloss.NewStyle().Foreground(s.ColorYellow)
+		subStyle       = lipgloss.NewStyle().Foreground(s.ColorPurple)
+		dimStyle       = lipgloss.NewStyle().Foreground(s.ColorDim)
 	)
 
 	baseIndent := "         "
@@ -391,7 +393,7 @@ func renderEventPreview(events []core.CursorEvent, w *core.ClaudeWindow) string 
 }
 
 // renderPreviewHeader builds a one-line session summary shown above the event log.
-func renderPreviewHeader(w *core.ClaudeWindow) string {
+func renderPreviewHeader(w *core.ClaudeWindow, s core.Styles) string {
 	if w == nil {
 		return ""
 	}
@@ -407,43 +409,43 @@ func renderPreviewHeader(w *core.ClaudeWindow) string {
 	var parts []string
 
 	// Status dot + label
-	statusSymbol := core.StatusStyle(status).Render(status.Symbol())
-	statusLabel := core.StatusStyle(status).Render(status.Label())
+	statusSymbol := s.StatusStyle(status).Render(status.Symbol())
+	statusLabel := s.StatusStyle(status).Render(status.Label())
 	parts = append(parts, statusSymbol+" "+statusLabel)
 
 	// Model (shortened)
 	if modelStr != "" {
-		parts = append(parts, lipgloss.NewStyle().Foreground(core.ColorRed).Render(shortenModel(modelStr)))
+		parts = append(parts, lipgloss.NewStyle().Foreground(s.ColorRed).Render(shortenModel(modelStr)))
 	}
 
 	// Effort level
 	if w.EffortLevel != "" {
-		parts = append(parts, core.EffortLevelStyle.Render(effortSymbol(w.EffortLevel)))
+		parts = append(parts, s.EffortLevelStyle.Render(effortSymbol(w.EffortLevel)))
 	}
 
 	// Cost
 	if cost := w.TotalCost(); cost > 0 {
-		parts = append(parts, core.CostStyle.Render(fmt.Sprintf("$%.2f", cost)))
+		parts = append(parts, s.CostStyle.Render(fmt.Sprintf("$%.2f", cost)))
 	}
 
 	// Tool + prompt counts
 	if w.ToolCount > 0 {
-		parts = append(parts, core.DimRowStyle.Render(fmt.Sprintf("%d tools", w.ToolCount)))
+		parts = append(parts, s.DimRowStyle.Render(fmt.Sprintf("%d tools", w.ToolCount)))
 	}
 	if w.PromptCount > 0 {
-		parts = append(parts, core.DimRowStyle.Render(fmt.Sprintf("%d prompts", w.PromptCount)))
+		parts = append(parts, s.DimRowStyle.Render(fmt.Sprintf("%d prompts", w.PromptCount)))
 	}
 
 	// Duration
 	if dur := w.SessionDuration(); dur != "" {
-		parts = append(parts, core.DimRowStyle.Render(dur))
+		parts = append(parts, s.DimRowStyle.Render(dur))
 	}
 
 	// Agent/permission mode badges
 	if w.AgentMode == "plan" {
-		parts = append(parts, core.PlanModeBadgeStyle.Render("[PLAN]"))
+		parts = append(parts, s.PlanModeBadgeStyle.Render("[PLAN]"))
 	} else if w.AgentMode == "agent" {
-		parts = append(parts, core.AgentModeBadgeStyle.Render("[AGENT]"))
+		parts = append(parts, s.AgentModeBadgeStyle.Render("[AGENT]"))
 	}
 
 	return "  " + strings.Join(parts, "  ")
@@ -556,7 +558,7 @@ func truncateEvent(s string, maxLen int) string {
 	return s
 }
 
-func renderCloudPreview(w *core.ClaudeWindow) string {
+func renderCloudPreview(w *core.ClaudeWindow, s core.Styles) string {
 	var b strings.Builder
 
 	status := "unknown"

@@ -62,9 +62,9 @@ func renderMainLayout(m Model) string {
 	}
 
 	if m.flashMessage != "" {
-		style := core.SuccessStyle
+		style := m.styles.SuccessStyle
 		if m.flashIsError {
-			style = core.ErrorStyle
+			style = m.styles.ErrorStyle
 		}
 		b.WriteByte('\n')
 		b.WriteString(style.Render(m.flashMessage))
@@ -74,7 +74,7 @@ func renderMainLayout(m Model) string {
 }
 
 // renderTabs renders the tab bar for the given active mode.
-func renderTabs(activeMode core.ViewMode) string {
+func renderTabs(s core.Styles, activeMode core.ViewMode) string {
 	type tab struct {
 		label  string
 		active bool
@@ -91,9 +91,9 @@ func renderTabs(activeMode core.ViewMode) string {
 	var parts []string
 	for _, t := range tabs {
 		if t.active {
-			parts = append(parts, core.TabActiveStyle.Render(t.label))
+			parts = append(parts, s.TabActiveStyle.Render(t.label))
 		} else {
-			parts = append(parts, core.TabInactiveStyle.Render(t.label))
+			parts = append(parts, s.TabInactiveStyle.Render(t.label))
 		}
 	}
 	return strings.Join(parts, " ")
@@ -101,13 +101,13 @@ func renderTabs(activeMode core.ViewMode) string {
 
 // renderHeader renders the mascot + title + tabs + attached session.
 func renderHeader(m Model, w int) string {
-	mascotLines := strings.Split(core.RenderMascot(), "\n")
-	tabs := renderTabs(m.mode)
-	titleLine := core.TitleStyle.Render("── tmux-overseer ──")
+	mascotLines := strings.Split(m.styles.RenderMascot(), "\n")
+	tabs := renderTabs(m.styles, m.mode)
+	titleLine := m.styles.TitleStyle.Render("── tmux-overseer ──")
 
 	right := ""
 	if m.attachedSession != "" {
-		right = core.AttachedStyle.Render("attached: " + m.attachedSession)
+		right = m.styles.AttachedStyle.Render("attached: " + m.attachedSession)
 	}
 
 	var lines []string
@@ -146,7 +146,7 @@ func renderPreview(m Model, w int) string {
 	content := m.previewContent
 	var allLines []string
 	if content == "" {
-		allLines = []string{core.DimRowStyle.Render("  (no preview available)")}
+		allLines = []string{m.styles.DimRowStyle.Render("  (no preview available)")}
 	} else {
 		rawLines := strings.Split(content, "\n")
 		allLines = make([]string, len(rawLines))
@@ -173,25 +173,25 @@ func renderPreview(m Model, w int) string {
 	hasBelow := endIdx < totalLines
 
 	// Top separator — include [/] hint and scroll indicator
-	resizeHint := core.DimRowStyle.Render("[/] resize  JK scroll")
+	resizeHint := m.styles.DimRowStyle.Render("[/] resize  JK scroll")
 	sepWidth := w - lipgloss.Width(resizeHint) - 3
 	if sepWidth < 1 {
 		sepWidth = 1
 	}
-	topSepLine := core.PreviewSeparator.Render(strings.Repeat("─", sepWidth)) + " " + resizeHint
+	topSepLine := m.styles.PreviewSeparator.Render(strings.Repeat("─", sepWidth)) + " " + resizeHint
 	if hasAbove {
-		upIndicator := " " + core.ScrollIndicatorStyle.Render("▲")
-		topSepLine = core.PreviewSeparator.Render(strings.Repeat("─", sepWidth-2)) + upIndicator + " " + resizeHint
+		upIndicator := " " + m.styles.ScrollIndicatorStyle.Render("▲")
+		topSepLine = m.styles.PreviewSeparator.Render(strings.Repeat("─", sepWidth-2)) + upIndicator + " " + resizeHint
 	}
 
-	bottomSep := core.PreviewSeparator.Render(strings.Repeat("─", w))
+	bottomSep := m.styles.PreviewSeparator.Render(strings.Repeat("─", w))
 	if hasBelow {
-		downIndicator := core.ScrollIndicatorStyle.Render("▼")
+		downIndicator := m.styles.ScrollIndicatorStyle.Render("▼")
 		bottomSepWidth := w - 2
 		if bottomSepWidth < 1 {
 			bottomSepWidth = 1
 		}
-		bottomSep = core.PreviewSeparator.Render(strings.Repeat("─", bottomSepWidth)) + " " + downIndicator
+		bottomSep = m.styles.PreviewSeparator.Render(strings.Repeat("─", bottomSepWidth)) + " " + downIndicator
 	}
 
 	var b strings.Builder
@@ -249,32 +249,32 @@ func renderStatusBar(m Model, w int) string {
 	}
 
 	if working > 0 {
-		left += core.StatusStyle(core.StatusWorking).Render(fmt.Sprintf("  ● %d working", working))
+		left += m.styles.StatusStyle(core.StatusWorking).Render(fmt.Sprintf("  ● %d working", working))
 	}
 	if waiting > 0 {
-		left += core.StatusStyle(core.StatusWaitingInput).Render(fmt.Sprintf("  ◐ %d waiting", waiting))
+		left += m.styles.StatusStyle(core.StatusWaitingInput).Render(fmt.Sprintf("  ◐ %d waiting", waiting))
 	}
 	dayTotal := m.dayCostTotal
 	if totalCost > dayTotal {
 		dayTotal = totalCost
 	}
-	left += core.CostStyle.Render(fmt.Sprintf("  $%.2f today", dayTotal))
+	left += m.styles.CostStyle.Render(fmt.Sprintf("  $%.2f today", dayTotal))
 
 	right := ""
 	if m.sourceFilter != core.FilterAll {
-		right += core.FilterActiveStyle.Render("filter: "+m.sourceFilter.Label()) + "  "
+		right += m.styles.FilterActiveStyle.Render("filter: "+m.sourceFilter.Label()) + "  "
 	}
 	if m.groupMode != core.GroupBySource {
-		right += core.FilterActiveStyle.Render("group: "+m.groupMode.Label()) + "  "
+		right += m.styles.FilterActiveStyle.Render("group: "+m.groupMode.Label()) + "  "
 	}
-	right += core.StatusBarStyle.Render("sort: " + m.sortMode.Label())
+	right += m.styles.StatusBarStyle.Render("sort: " + m.sortMode.Label())
 
 	gap := w - lipgloss.Width(left) - lipgloss.Width(right) - 1
 	if gap < 1 {
 		gap = 1
 	}
 
-	return core.StatusBarStyle.Render(left) + strings.Repeat(" ", gap) + right
+	return m.styles.StatusBarStyle.Render(left) + strings.Repeat(" ", gap) + right
 }
 
 // renderFooter renders context-sensitive keybinding hints.
@@ -284,24 +284,24 @@ func renderFooter(m Model, _ int) string {
 	switch m.mode {
 	case core.ModeSessionList:
 		hints = []string{
-			core.FooterKeyStyle.Render("↑↓") + " navigate",
-			core.FooterKeyStyle.Render("l/→") + " actions",
-			core.FooterKeyStyle.Render("enter") + " switch",
-			core.FooterKeyStyle.Render("1/2/3") + " tabs",
-			core.FooterKeyStyle.Render("f") + " source",
-			core.FooterKeyStyle.Render("g") + " group",
-			core.FooterKeyStyle.Render("/") + " filter",
-			core.FooterKeyStyle.Render("?") + " help",
-			core.FooterKeyStyle.Render("q") + " quit",
+			m.styles.FooterKeyStyle.Render("↑↓") + " navigate",
+			m.styles.FooterKeyStyle.Render("l/→") + " actions",
+			m.styles.FooterKeyStyle.Render("enter") + " switch",
+			m.styles.FooterKeyStyle.Render("1/2/3") + " tabs",
+			m.styles.FooterKeyStyle.Render("f") + " source",
+			m.styles.FooterKeyStyle.Render("g") + " group",
+			m.styles.FooterKeyStyle.Render("/") + " filter",
+			m.styles.FooterKeyStyle.Render("?") + " help",
+			m.styles.FooterKeyStyle.Render("q") + " quit",
 		}
 	case core.ModeActionMenu:
 		hints = []string{
-			core.FooterKeyStyle.Render("↑↓") + " navigate",
-			core.FooterKeyStyle.Render("enter") + " select",
-			core.FooterKeyStyle.Render("h/←") + " back",
-			core.FooterKeyStyle.Render("q") + " quit",
+			m.styles.FooterKeyStyle.Render("↑↓") + " navigate",
+			m.styles.FooterKeyStyle.Render("enter") + " select",
+			m.styles.FooterKeyStyle.Render("h/←") + " back",
+			m.styles.FooterKeyStyle.Render("q") + " quit",
 		}
 	}
 
-	return " " + core.FooterStyle.Render(strings.Join(hints, "  "))
+	return " " + m.styles.FooterStyle.Render(strings.Join(hints, "  "))
 }
