@@ -192,7 +192,7 @@ func loadExistingPlans(d *sql.DB) (map[string]existingPlan, error) {
 	if err != nil {
 		return result, nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var convID string
@@ -214,7 +214,7 @@ func loadExistingPlans(d *sql.DB) (map[string]existingPlan, error) {
 	if err != nil {
 		return result, nil
 	}
-	defer todoRows.Close()
+	defer func() { _ = todoRows.Close() }()
 
 	for todoRows.Next() {
 		var planID, todoID, status string

@@ -198,9 +198,8 @@ func (m *Model) rebuildItems() {
 		return ""
 	}
 
-	cursorByPath := make(map[string][]int)  // Cursor workspace → session indices
-	cliByPath := make(map[string][]int)     // CLI workspace → session indices
-	cursorPathOrder := []string{}
+	cursorByPath := make(map[string][]int) // Cursor workspace → session indices
+	cliByPath := make(map[string][]int)   // CLI workspace → session indices
 	for _, i := range indices {
 		if i >= len(m.windows) {
 			continue
@@ -212,9 +211,6 @@ func (m *Model) rebuildItems() {
 		}
 		switch w.Source {
 		case core.SourceCursor:
-			if _, exists := cursorByPath[key]; !exists {
-				cursorPathOrder = append(cursorPathOrder, key)
-			}
 			cursorByPath[key] = append(cursorByPath[key], i)
 		case core.SourceCLI:
 			cliByPath[key] = append(cliByPath[key], i)

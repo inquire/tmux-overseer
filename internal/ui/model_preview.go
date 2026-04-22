@@ -442,9 +442,10 @@ func renderPreviewHeader(w *core.ClaudeWindow, s core.Styles) string {
 	}
 
 	// Agent/permission mode badges
-	if w.AgentMode == "plan" {
+	switch w.AgentMode {
+	case "plan":
 		parts = append(parts, s.PlanModeBadgeStyle.Render("[PLAN]"))
-	} else if w.AgentMode == "agent" {
+	case "agent":
 		parts = append(parts, s.AgentModeBadgeStyle.Render("[AGENT]"))
 	}
 

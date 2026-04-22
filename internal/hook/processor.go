@@ -77,10 +77,10 @@ func Process(input []byte, statusDir, tmuxPane string) error {
 
 	// SessionEnd: clean up and exit early
 	if h.HookEvent == "SessionEnd" {
-		os.Remove(statusFile)
-		os.Remove(eventsFile)
-		os.Remove(countersFile)
-		os.Remove(subagentFile)
+		_ = os.Remove(statusFile)
+		_ = os.Remove(eventsFile)
+		_ = os.Remove(countersFile)
+		_ = os.Remove(subagentFile)
 		return nil
 	}
 
@@ -99,7 +99,7 @@ func Process(input []byte, statusDir, tmuxPane string) error {
 		c.SessionStartTS = time.Now().Unix()
 		c.PromptCount = 0
 		c.ToolCount = 0
-		os.WriteFile(subagentFile, []byte("[]"), 0o644)
+		_ = os.WriteFile(subagentFile, []byte("[]"), 0o644)
 		truncateFile(eventsFile)
 		eventJSON = buildEventJSON(ts, "session_start", nil)
 
@@ -123,13 +123,13 @@ func Process(input []byte, statusDir, tmuxPane string) error {
 		if h.ToolName == "Agent" {
 			if agentDesc := extractStringFieldFromObject(h.ToolInput, "description"); agentDesc != "" {
 				pendingFile := filepath.Join(statusDir, "status-"+safePaneID+".pending-agent-desc")
-				os.WriteFile(pendingFile, []byte(agentDesc), 0o644)
+				_ = os.WriteFile(pendingFile, []byte(agentDesc), 0o644)
 			}
 		}
 		// Persist the full TodoWrite input so the TUI can show native Claude Code tasks.
 		if h.ToolName == "TodoWrite" && len(h.ToolInput) > 0 {
 			todosFile := filepath.Join(statusDir, "status-"+safePaneID+".todos.json")
-			os.WriteFile(todosFile, []byte(h.ToolInput), 0o644)
+			_ = os.WriteFile(todosFile, []byte(h.ToolInput), 0o644)
 		}
 		// Track superpowers TaskCreate/TaskUpdate so sessions show task progress.
 		if h.ToolName == "TaskCreate" && len(h.ToolInput) > 0 {
@@ -170,7 +170,7 @@ func Process(input []byte, statusDir, tmuxPane string) error {
 			pendingFile := filepath.Join(statusDir, "status-"+safePaneID+".pending-agent-desc")
 			if data, err := os.ReadFile(pendingFile); err == nil {
 				desc = strings.TrimSpace(string(data))
-				os.Remove(pendingFile)
+				_ = os.Remove(pendingFile)
 			}
 		}
 		if desc == "" {
@@ -301,7 +301,7 @@ func loadCounters(path string) counters {
 	if err != nil {
 		return c
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -328,7 +328,7 @@ func loadCounters(path string) counters {
 func saveCounters(path string, c counters) {
 	data := fmt.Sprintf("PROMPT_COUNT=%d\nTOOL_COUNT=%d\nSESSION_START_TS=%d\nAGENT_MODE=%s\nSUBAGENT_COUNT=%d\n",
 		c.PromptCount, c.ToolCount, c.SessionStartTS, c.AgentMode, c.SubagentCount)
-	os.WriteFile(path, []byte(data), 0o644)
+	_ = os.WriteFile(path, []byte(data), 0o644)
 }
 
 func writeStatusJSON(path, paneID string, h HookInput, status string, c counters) {
@@ -354,7 +354,7 @@ func writeStatusJSON(path, paneID string, h HookInput, status string, c counters
 		DetectSandbox(),
 		now,
 	)
-	os.WriteFile(path, []byte(data), 0o644)
+	_ = os.WriteFile(path, []byte(data), 0o644)
 }
 
 func appendEvent(path, eventJSON string) {
@@ -362,8 +362,8 @@ func appendEvent(path, eventJSON string) {
 	if err != nil {
 		return
 	}
-	f.WriteString(eventJSON + "\n")
-	f.Close()
+	_, _ = f.WriteString(eventJSON + "\n")
+	_ = f.Close()
 
 	// Prune if >200 lines
 	pruneEventsFile(path, 200)
@@ -380,18 +380,18 @@ func pruneEventsFile(path string, maxLines int) {
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	f.Close()
+	_ = f.Close()
 
 	if len(lines) <= maxLines {
 		return
 	}
 
 	lines = lines[len(lines)-maxLines:]
-	os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
+	_ = os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o644)
 }
 
 func truncateFile(path string) {
-	os.WriteFile(path, nil, 0o644)
+	_ = os.WriteFile(path, nil, 0o644)
 }
 
 func forwardToHookserver(statusDir string, input []byte) {
@@ -410,7 +410,7 @@ func forwardToHookserver(statusDir string, input []byte) {
 	if err != nil {
 		return
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 }
 
 func cleanupOldFiles(statusDir string) {
@@ -420,7 +420,7 @@ func cleanupOldFiles(statusDir string) {
 		for _, m := range matches {
 			info, err := os.Stat(m)
 			if err == nil && info.ModTime().Before(cutoff) {
-				os.Remove(m)
+				_ = os.Remove(m)
 			}
 		}
 	}
@@ -475,7 +475,7 @@ func extractStringFieldFromObject(raw json.RawMessage, key string) string {
 		return ""
 	}
 	var s string
-	json.Unmarshal(v, &s)
+	_ = json.Unmarshal(v, &s)
 	return s
 }
 
@@ -550,7 +550,7 @@ func taskListAdd(path string, raw json.RawMessage) {
 
 	var list []taskEntry
 	if data, err := os.ReadFile(path); err == nil {
-		json.Unmarshal(data, &list)
+		_ = json.Unmarshal(data, &list)
 	}
 
 	// Auto-assign sequential ID.
@@ -558,7 +558,7 @@ func taskListAdd(path string, raw json.RawMessage) {
 	list = append(list, taskEntry{ID: id, Status: "pending", Subject: subject})
 
 	data, _ := json.Marshal(list)
-	os.WriteFile(path, data, 0o644)
+	_ = os.WriteFile(path, data, 0o644)
 }
 
 // taskListUpdate updates a task status from a TaskUpdate tool_input.
@@ -594,5 +594,5 @@ func taskListUpdate(path string, raw json.RawMessage) {
 		}
 	}
 	out, _ := json.Marshal(list)
-	os.WriteFile(path, out, 0o644)
+	_ = os.WriteFile(path, out, 0o644)
 }

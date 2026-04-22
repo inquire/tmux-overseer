@@ -177,43 +177,6 @@ func renderDialogBar(m Model, _ int, title, _ string) string {
 		"  " + m.styles.FooterStyle.Render(m.styles.FooterKeyStyle.Render("enter")+" confirm  "+m.styles.FooterKeyStyle.Render("esc")+" cancel")
 }
 
-// renderHelp renders the full keybinding help overlay.
-func renderHelp(m Model, w int) string {
-	content := `
-  Navigation
-  ` + m.styles.FooterKeyStyle.Render("↑/k") + `     move up
-  ` + m.styles.FooterKeyStyle.Render("↓/j") + `     move down
-  ` + m.styles.FooterKeyStyle.Render("l/→") + `     open actions
-  ` + m.styles.FooterKeyStyle.Render("tab") + `     expand/collapse panes
-  ` + m.styles.FooterKeyStyle.Render("enter") + `   switch to session
-
-  Actions
-  ` + m.styles.FooterKeyStyle.Render("n") + `       new session
-  ` + m.styles.FooterKeyStyle.Render("i") + `       send input
-  ` + m.styles.FooterKeyStyle.Render("d") + `       kill session
-  ` + m.styles.FooterKeyStyle.Render("s") + `       cycle sort mode
-  ` + m.styles.FooterKeyStyle.Render("/") + `       filter
-  ` + m.styles.FooterKeyStyle.Render("f") + `       source filter
-  ` + m.styles.FooterKeyStyle.Render("p") + `       plans browser
-  ` + m.styles.FooterKeyStyle.Render("R") + `       refresh
-
-  ` + m.styles.FooterKeyStyle.Render("q/esc") + `   quit
-
-  ` + m.styles.DimRowStyle.Render("press any key to close")
-
-	boxWidth := state.MinInt(42, w-4)
-	box := m.styles.DialogBorderStyle.Width(boxWidth).Render(
-		m.styles.DialogTitleStyle.Render("Keybindings") + content,
-	)
-
-	padding := (w - lipgloss.Width(box)) / 2
-	if padding < 0 {
-		padding = 0
-	}
-
-	return strings.Repeat("\n", 2) + strings.Repeat(" ", padding) + box
-}
-
 // renderLoadingScreen shows a centered loading spinner during initial load.
 func renderLoadingScreen(m Model) string {
 	w := m.width

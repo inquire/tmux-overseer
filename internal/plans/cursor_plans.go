@@ -77,7 +77,7 @@ func parseCursorPlan(path string) (core.PlanEntry, error) {
 	if err != nil {
 		return core.PlanEntry{}, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Extract YAML frontmatter between --- delimiters
 	scanner := bufio.NewScanner(f)

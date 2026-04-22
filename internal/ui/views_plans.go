@@ -245,14 +245,6 @@ func renderPlanGroupHeader(s core.Styles, g core.PlanGroup, expanded, selected b
 	return left
 }
 
-// renderPlanRow renders a single plan entry.
-// inGroup=true → compact single line; inGroup=false → two lines.
-// showWorkspace=true → append shortened workspace path (used in day grouping).
-// marked=true → item is part of a multi-selection.
-func renderPlanRow(s core.Styles, plan core.PlanEntry, selected, marked, inGroup, showWorkspace bool, w int) string {
-	return renderPlanRowFiltered(s, plan, selected, marked, inGroup, showWorkspace, w, "")
-}
-
 func renderPlanRowFiltered(s core.Styles, plan core.PlanEntry, selected, marked, inGroup, showWorkspace bool, w int, filterText string) string {
 	indent := ""
 	if inGroup {

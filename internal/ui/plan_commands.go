@@ -109,7 +109,7 @@ func extractUserMessages(jsonlPath string, maxMessages, maxChars int) ([]string,
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var messages []string
 	scanner := bufio.NewScanner(f)
@@ -261,14 +261,3 @@ func convertConversationCmd(jsonlPath, workspace string) tea.Cmd {
 	}
 }
 
-// planCreationDate extracts the creation date from a plan filename (YYYY-MM-DD prefix)
-// or falls back to the file's LastActive time.
-func planCreationDate(p core.PlanEntry) time.Time {
-	base := filepath.Base(p.FilePath)
-	if len(base) >= 10 {
-		if t, err := time.Parse("2006-01-02", base[:10]); err == nil {
-			return t
-		}
-	}
-	return p.LastActive
-}

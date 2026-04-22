@@ -512,64 +512,6 @@ func heatChar(s core.Styles, score int, selected bool) string {
 	return style.Render(ch) + " "
 }
 
-// renderSelectedDayDetail renders the historical day detail when navigating
-// to a day that is not today. Shows plan-level breakdown with progress.
-func renderSelectedDayDetail(m Model, w int) string {
-	if len(m.activityGrid) == 0 {
-		return ""
-	}
-
-	detail := m.activityDayDetail
-	if detail.PlansTouched == 0 && len(detail.Projects) == 0 {
-		return ""
-	}
-
-	var lines []string
-
-	for _, proj := range detail.Projects {
-		lines = append(lines, "    "+m.styles.GitBranchStyle.Render(proj.ProjectName))
-
-		for _, dp := range proj.Plans {
-			progress := ""
-			if dp.TotalTodos > 0 {
-				maxBlocks := 6
-				filled := (dp.CompletedTodos * maxBlocks) / dp.TotalTodos
-				progress = m.styles.PlanProgressStyle.Render(
-					strings.Repeat("▓", filled)+strings.Repeat("░", maxBlocks-filled)) +
-					m.styles.DimRowStyle.Render(fmt.Sprintf(" %d/%d", dp.CompletedTodos, dp.TotalTodos))
-			}
-
-			if dp.TotalTodos > 0 && dp.CompletedTodos == dp.TotalTodos {
-				progress += " " + m.styles.SuccessStyle.Render("✓ done!")
-			}
-
-			title := dp.Title
-			maxTitle := w - lipgloss.Width(progress) - 16
-			if maxTitle < 10 {
-				maxTitle = 10
-			}
-			if lipgloss.Width(title) > maxTitle {
-				title = title[:maxTitle-3] + "..."
-			}
-
-			line := "      " + m.styles.NormalRowStyle.Render(title)
-			if progress != "" {
-				gap := w - lipgloss.Width(line) - lipgloss.Width(progress) - 2
-				if gap < 1 {
-					gap = 1
-				}
-				line += strings.Repeat(" ", gap) + progress
-			}
-			lines = append(lines, line)
-		}
-	}
-
-	if len(lines) == 0 {
-		return ""
-	}
-	return strings.Join(lines, "\n")
-}
-
 func renderActivityFooter(s core.Styles, w int) string {
 	keys := []string{
 		s.FooterKeyStyle.Render("←→") + " navigate days",

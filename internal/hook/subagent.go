@@ -45,7 +45,7 @@ func readSubagentList(path string) ([]SubagentEntry, error) {
 		return nil, nil
 	}
 	var list []SubagentEntry
-	json.Unmarshal(data, &list)
+	_ = json.Unmarshal(data, &list)
 	return list, nil
 }
 

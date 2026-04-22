@@ -60,11 +60,13 @@ func TestProcessAskQuestion(t *testing.T) {
 	dir := t.TempDir()
 	input := `{"session_id":"test","hook_event_name":"PreToolUse","tool_name":"AskQuestion","tool_input":{}}`
 
-	Process([]byte(input), dir, "%5")
+	if err := Process([]byte(input), dir, "%5"); err != nil {
+		t.Fatal(err)
+	}
 
 	data, _ := os.ReadFile(filepath.Join(dir, "status-_5.json"))
 	var m map[string]interface{}
-	json.Unmarshal(data, &m)
+	_ = json.Unmarshal(data, &m)
 	if m["status"] != "waiting" {
 		t.Errorf("AskQuestion status = %v, want waiting", m["status"])
 	}
@@ -74,11 +76,13 @@ func TestProcessSessionEnd(t *testing.T) {
 	dir := t.TempDir()
 	pane := "_99"
 	for _, suffix := range []string{".json", ".events.jsonl", ".counters", ".subagents.json"} {
-		os.WriteFile(filepath.Join(dir, "status-"+pane+suffix), []byte("x"), 0o644)
+		_ = os.WriteFile(filepath.Join(dir, "status-"+pane+suffix), []byte("x"), 0o644)
 	}
 
 	input := `{"session_id":"test","hook_event_name":"SessionEnd"}`
-	Process([]byte(input), dir, "%99")
+	if err := Process([]byte(input), dir, "%99"); err != nil {
+		t.Fatal(err)
+	}
 
 	for _, suffix := range []string{".json", ".events.jsonl", ".counters", ".subagents.json"} {
 		if _, err := os.Stat(filepath.Join(dir, "status-"+pane+suffix)); err == nil {
@@ -91,11 +95,13 @@ func TestProcessSessionStart(t *testing.T) {
 	dir := t.TempDir()
 	input := `{"session_id":"test","hook_event_name":"SessionStart","model":"opus","cwd":"/tmp"}`
 
-	Process([]byte(input), dir, "%1")
+	if err := Process([]byte(input), dir, "%1"); err != nil {
+		t.Fatal(err)
+	}
 
 	data, _ := os.ReadFile(filepath.Join(dir, "status-_1.json"))
 	var m map[string]interface{}
-	json.Unmarshal(data, &m)
+	_ = json.Unmarshal(data, &m)
 	if m["status"] != "idle" {
 		t.Errorf("status = %v, want idle", m["status"])
 	}
@@ -112,7 +118,9 @@ func TestProcessFallbackSessionID(t *testing.T) {
 	input := `{"session_id":"abc-123","hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"ls"}}`
 
 	// No tmux pane — should use session ID
-	Process([]byte(input), dir, "")
+	if err := Process([]byte(input), dir, ""); err != nil {
+		t.Fatal(err)
+	}
 
 	statusFile := filepath.Join(dir, "status-session-abc-123.json")
 	if _, err := os.Stat(statusFile); err != nil {
