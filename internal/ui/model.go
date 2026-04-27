@@ -160,12 +160,30 @@ type Model struct {
 	quitting bool
 }
 
+// themeOverride checks TMUX_OVERSEER_THEME and overrides the detected value.
+// Accepted values: "light" forces light mode, "dark" forces dark mode.
+// Any other value (or unset) returns the detected value unchanged.
+func themeOverride(detected bool) bool {
+	switch os.Getenv("TMUX_OVERSEER_THEME") {
+	case "dark":
+		return true
+	case "light":
+		return false
+	default:
+		return detected
+	}
+}
+
+func detectDarkBackground() bool {
+	return themeOverride(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+}
+
 // InitialModel creates the initial Bubble Tea model.
 // If a sessions cache exists on disk, it is loaded immediately so the UI
 // renders the session list on the very first frame instead of a loading screen.
 // A background refresh is always fired from Init() to update stale data.
 func InitialModel() Model {
-	styles := core.NewStyles(lipgloss.HasDarkBackground(os.Stdin, os.Stdout))
+	styles := core.NewStyles(detectDarkBackground())
 
 	s := spinner.New(
 		spinner.WithSpinner(core.ClaudeFlowerSpinner),
@@ -269,10 +287,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		// Session list gets: total height minus fixed chrome.
-		// Fixed chrome = header(3) + newlines/seps + preview(previewHeight+2) + statusbar(1) + footer(1)
-		listHeightInLines := state.MaxInt(3, msg.Height-m.previewHeight-9)
+		// Fixed chrome = header(3) + preview(previewHeight+2) + statusbar(1) + footer(1) + 4 newline separators = previewHeight+11
+		// But newline separators connect sections (don't add extra lines), so: 3 + (previewHeight+2) + 1 + 1 = previewHeight+7
+		listHeightInLines := state.MaxInt(3, msg.Height-m.previewHeight-7)
 		// ViewHeight is in items. Sessions vary from 2 lines (minimal) to 12+ (with tasks).
-		// Use line budget directly — renderSessionList uses ViewHeight*2 as maxLines so
+		// Use line budget directly — renderSessionList uses ViewHeight*3 as maxLines so
 		// set ViewHeight = listHeightInLines/3 to keep that budget equal to available lines.
 		listHeightInItems := state.MaxInt(1, listHeightInLines/3)
 		m.scroll.SetViewHeight(listHeightInItems)
@@ -287,7 +306,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.BackgroundColorMsg:
-		m.styles = core.NewStyles(msg.IsDark())
+		m.styles = core.NewStyles(themeOverride(msg.IsDark()))
 		return m, nil
 
 	case core.TickMsg:

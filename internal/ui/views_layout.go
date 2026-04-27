@@ -9,6 +9,14 @@ import (
 	"github.com/inquire/tmux-overseer/internal/core"
 )
 
+// countLines returns the number of visual lines in a rendered string.
+func countLines(s string) int {
+	if s == "" {
+		return 0
+	}
+	return strings.Count(s, "\n") + 1
+}
+
 // renderMainLayout renders the full 5-section vertical layout.
 func renderMainLayout(m Model) string {
 	w := m.width
@@ -19,23 +27,38 @@ func renderMainLayout(m Model) string {
 	var b strings.Builder
 	b.Grow(4096)
 
-	b.WriteString(renderHeader(m, w))
+	header := renderHeader(m, w)
+	b.WriteString(header)
 
+	var contentStr string
 	b.WriteByte('\n')
 	switch m.mode {
 	case core.ModeActionMenu:
-		b.WriteString(renderActionMenu(m, w))
+		contentStr = renderActionMenu(m, w)
+		b.WriteString(contentStr)
 	default:
 		if len(m.windows) == 0 {
-			b.WriteString(renderEmpty(m, w))
+			contentStr = renderEmpty(m, w)
+			b.WriteString(contentStr)
 		} else {
-			b.WriteString(renderSessionList(m, w))
+			contentStr = renderSessionList(m, w)
+			b.WriteString(contentStr)
 		}
 	}
 
 	if m.mode == core.ModeSessionList || m.mode == core.ModeActionMenu {
+		// Fixed chrome: header + content + status(1) + footer(1) + 4 newline separators
+		usedLines := countLines(header) + countLines(contentStr) + 2 + 4
+		// Preview gets all remaining space, with a minimum of previewHeight
+		previewContentLines := m.height - usedLines - 2 // -2 for top/bottom separators
+		if previewContentLines < m.previewHeight {
+			previewContentLines = m.previewHeight
+		}
+		if previewContentLines < 4 {
+			previewContentLines = 4
+		}
 		b.WriteByte('\n')
-		b.WriteString(renderPreview(m, w))
+		b.WriteString(renderPreviewWithHeight(m, w, previewContentLines))
 	}
 
 	b.WriteByte('\n')
@@ -138,7 +161,12 @@ func renderHeader(m Model, w int) string {
 // renderPreview renders the scrollable preview pane with separators.
 // Height is m.previewHeight (configurable via [ and ]); offset via J/K.
 func renderPreview(m Model, w int) string {
-	maxPreview := m.previewHeight
+	return renderPreviewWithHeight(m, w, m.previewHeight)
+}
+
+// renderPreviewWithHeight renders the preview pane at the given content line height.
+func renderPreviewWithHeight(m Model, w int, height int) string {
+	maxPreview := height
 	if maxPreview < 4 {
 		maxPreview = 4
 	}
