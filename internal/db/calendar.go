@@ -98,7 +98,7 @@ func queryDayScores(d *sql.DB, since time.Time) map[string]int {
 	if err != nil {
 		return scoreMap
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	sinceDate := since.Format("2006-01-02")
 	for rows.Next() {
@@ -149,7 +149,7 @@ func GetProjectSummaries() []ProjectSummary {
 	if err != nil {
 		return nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var result []ProjectSummary
 	for rows.Next() {
@@ -208,7 +208,7 @@ func GetDayDetail(date time.Time) DayDetail {
 	if err != nil {
 		return detail
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	projectMap := make(map[string]*DayProjectDetail)
 	var projectOrder []string

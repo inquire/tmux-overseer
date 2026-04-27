@@ -9,7 +9,7 @@ import (
 func TestSubagentAdd(t *testing.T) {
 	dir := t.TempDir()
 	fp := filepath.Join(dir, "subagents.json")
-	os.WriteFile(fp, []byte("[]"), 0o644)
+	_ = os.WriteFile(fp, []byte("[]"), 0o644)
 
 	count, err := subagentAdd(fp, SubagentEntry{
 		ID: "a1", AgentType: "explore", Description: "searching",
@@ -32,7 +32,7 @@ func TestSubagentAdd(t *testing.T) {
 func TestSubagentRemove(t *testing.T) {
 	dir := t.TempDir()
 	fp := filepath.Join(dir, "subagents.json")
-	os.WriteFile(fp, []byte(`[{"id":"a1"},{"id":"a2"}]`), 0o644)
+	_ = os.WriteFile(fp, []byte(`[{"id":"a1"},{"id":"a2"}]`), 0o644)
 
 	count, err := subagentRemove(fp, "a1")
 	if err != nil {
@@ -46,7 +46,7 @@ func TestSubagentRemove(t *testing.T) {
 func TestSubagentRemoveAll(t *testing.T) {
 	dir := t.TempDir()
 	fp := filepath.Join(dir, "subagents.json")
-	os.WriteFile(fp, []byte(`[{"id":"a1"}]`), 0o644)
+	_ = os.WriteFile(fp, []byte(`[{"id":"a1"}]`), 0o644)
 
 	count, _ := subagentRemove(fp, "a1")
 	if count != 0 {
@@ -57,7 +57,7 @@ func TestSubagentRemoveAll(t *testing.T) {
 func TestSubagentCount(t *testing.T) {
 	dir := t.TempDir()
 	fp := filepath.Join(dir, "subagents.json")
-	os.WriteFile(fp, []byte(`[{"id":"a1"},{"id":"a2"},{"id":"a3"}]`), 0o644)
+	_ = os.WriteFile(fp, []byte(`[{"id":"a1"},{"id":"a2"},{"id":"a3"}]`), 0o644)
 
 	if got := subagentCount(fp); got != 3 {
 		t.Errorf("count = %d, want 3", got)

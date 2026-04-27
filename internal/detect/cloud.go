@@ -129,7 +129,7 @@ func readLocalHandoffs() []core.ClaudeWindow {
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	now := time.Now()
 	var windows []core.ClaudeWindow
@@ -202,7 +202,7 @@ func fetchCloudAgents(apiKey string) []core.ClaudeWindow {
 	if err != nil {
 		return nil
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil

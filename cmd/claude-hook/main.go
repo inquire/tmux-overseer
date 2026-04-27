@@ -15,7 +15,10 @@ func main() {
 	}
 
 	statusDir := os.Getenv("HOME") + "/.claude-tmux"
-	os.MkdirAll(statusDir, 0o755)
+	if err := os.MkdirAll(statusDir, 0o755); err != nil {
+		fmt.Fprintf(os.Stderr, "mkdir error: %v\n", err)
+		os.Exit(1)
+	}
 
 	tmuxPane := os.Getenv("TMUX_PANE")
 

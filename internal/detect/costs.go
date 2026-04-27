@@ -84,9 +84,9 @@ func (ct *CostTracker) RecordCost(sessionID, source, name, model string, cost fl
 	if err != nil {
 		return false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
-	fmt.Fprintf(f, "%s\n", data)
+	_, _ = fmt.Fprintf(f, "%s\n", data)
 
 	// Invalidate the DayCosts cache since we just wrote new data
 	InvalidateDayCostsCache()
@@ -139,7 +139,7 @@ func DayCosts() (perSession map[string]float64, dayTotal float64) {
 		dayCostsCache.fetchedAt = time.Now()
 		return
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {

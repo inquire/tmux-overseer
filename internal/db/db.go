@@ -45,7 +45,7 @@ func Open() (*sql.DB, error) {
 // Close shuts down the DuckDB connection.
 func Close() {
 	if globalDB != nil {
-		globalDB.Close()
+		_ = globalDB.Close()
 		globalDB = nil
 	}
 }
@@ -112,16 +112,16 @@ func migrate(db *sql.DB) error {
 	}
 
 	// Migration: drop old activity_events with id column and sequence
-	db.Exec(`DROP SEQUENCE IF EXISTS activity_events_seq`)
+	_, _ = db.Exec(`DROP SEQUENCE IF EXISTS activity_events_seq`)
 	// Check if old table has 'id' column and recreate without it
 	rows, err := db.Query(`SELECT column_name FROM information_schema.columns
 		WHERE table_name = 'activity_events' AND column_name = 'id'`)
 	if err == nil {
 		hasID := rows.Next()
-		rows.Close()
+		_ = rows.Close()
 		if hasID {
-			db.Exec(`DROP TABLE activity_events`)
-			db.Exec(`CREATE TABLE activity_events (
+			_, _ = db.Exec(`DROP TABLE activity_events`)
+			_, _ = db.Exec(`CREATE TABLE activity_events (
 				workspace_path TEXT NOT NULL,
 				plan_id TEXT,
 				agent_id TEXT,

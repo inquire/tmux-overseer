@@ -114,7 +114,7 @@ func ListClaudeWindows() ([]core.ClaudeWindow, error) {
 			return nil
 		})
 	}
-	g.Wait()
+	_ = g.Wait()
 
 	// Group enriched panes into windows.
 	windowMap := make(map[string]*core.ClaudeWindow)
@@ -290,7 +290,7 @@ func ListAllSessions() ([]core.ClaudeWindow, error) {
 				return nil
 			})
 		}
-		g.Wait()
+		_ = g.Wait()
 
 		// Resolve active plan progress for Cursor sessions.
 		var composerIDs []string

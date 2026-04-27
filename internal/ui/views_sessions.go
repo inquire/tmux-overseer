@@ -479,9 +479,10 @@ func buildBadgeStr(win core.ClaudeWindow, showSource bool, s core.Styles) string
 			badge += s.AutomationBadgeStyle.Render(" [AUTO]")
 		}
 	}
-	if win.TeamRole == "lead" {
+	switch win.TeamRole {
+	case "lead":
 		badge += s.LeadBadgeStyle.Render(" [LEAD]")
-	} else if win.TeamRole == "teammate" {
+	case "teammate":
 		badge += s.TeamBadgeStyle.Render(" [TEAM]")
 	}
 	switch win.SandboxType {
@@ -616,9 +617,10 @@ func renderSessionRowLine2(win core.ClaudeWindow, inGroup bool, w int, s core.St
 
 	// Agent mode badge
 	if win.Source != core.SourceCloud {
-		if win.AgentMode == "plan" {
+		switch win.AgentMode {
+		case "plan":
 			parts = append(parts, s.PlanModeBadgeStyle.Render("[PLAN]"))
-		} else if win.AgentMode == "agent" {
+		case "agent":
 			parts = append(parts, s.AgentModeBadgeStyle.Render("[AGENT]"))
 		}
 		if win.PromptCount > 0 {
@@ -694,9 +696,10 @@ func subagentLine(sa core.Subagent, descLimit int, s core.Styles) string {
 	line := iconStr + "  " + name
 
 	// Sandbox badge
-	if sa.SandboxType == "docker" {
+	switch sa.SandboxType {
+	case "docker":
 		line += "  " + lipgloss.NewStyle().Foreground(s.ColorCyan).Render("[⬡ docker]")
-	} else if sa.SandboxType == "kubernetes" {
+	case "kubernetes":
 		line += "  " + lipgloss.NewStyle().Foreground(s.ColorPurple).Render("[⬡ k8s]")
 	}
 
@@ -778,9 +781,9 @@ func renderSessionRowExpanded(win core.ClaudeWindow, _ int, s core.Styles) strin
 			num := fmt.Sprintf("%d.", i+1)
 			icon, style := taskIconStyle(t.Status, s)
 			content := truncate(t.Content, sessionTruncTodo)
-			sb.WriteString(fmt.Sprintf("\n  │  %s %s",
+			_, _ = fmt.Fprintf(&sb, "\n  │  %s %s",
 				s.TaskSectionStyle.Render(num),
-				style.Render(icon+" "+content)))
+				style.Render(icon+" "+content))
 		}
 		if hasActivity {
 			sb.WriteString("\n  │")

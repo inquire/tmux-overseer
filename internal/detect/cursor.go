@@ -84,7 +84,7 @@ func ReadCursorSessions() ([]core.ClaudeWindow, error) {
 		// the sessionEnd hook firing.
 		if now-hd.Timestamp > CursorStaleTimeout {
 			// Clean up stale file - session is likely closed
-			os.Remove(file)
+			_ = os.Remove(file)
 			continue
 		}
 
@@ -214,7 +214,7 @@ func readJSONLEvents(path string, maxEvents int) []core.CursorEvent {
 	if err != nil {
 		return nil
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var all []core.CursorEvent
 	scanner := bufio.NewScanner(f)
@@ -468,7 +468,7 @@ func CleanupStaleCursorSessions(maxAge time.Duration) error {
 		}
 
 		if now.Sub(info.ModTime()) > maxAge {
-			os.Remove(file)
+			_ = os.Remove(file)
 		}
 	}
 
@@ -490,10 +490,10 @@ func RemoveCursorSession(conversationID string) error {
 		return '_'
 	}, conversationID)
 
-	os.Remove(filepath.Join(dir, "cursor-"+safeID+".json"))
-	os.Remove(filepath.Join(dir, "cursor-"+safeID+".log"))
-	os.Remove(filepath.Join(dir, "cursor-"+safeID+".events.jsonl"))
-	os.Remove(filepath.Join(dir, "cursor-"+safeID+".counters"))
-	os.Remove(filepath.Join(dir, "cursor-"+safeID+".subagents.json"))
+	_ = os.Remove(filepath.Join(dir, "cursor-"+safeID+".json"))
+	_ = os.Remove(filepath.Join(dir, "cursor-"+safeID+".log"))
+	_ = os.Remove(filepath.Join(dir, "cursor-"+safeID+".events.jsonl"))
+	_ = os.Remove(filepath.Join(dir, "cursor-"+safeID+".counters"))
+	_ = os.Remove(filepath.Join(dir, "cursor-"+safeID+".subagents.json"))
 	return nil
 }
